@@ -27,6 +27,10 @@
 
 - Attention is all you need https://arxiv.org/pdf/1706.03762.pdf
 
+### TFG María Barroso
+
+- https://repositorio.uam.es/bitstream/handle/10486/698026/barroso_honrubia_maria_tfg.pdf?sequence=1&isAllowed=y
+
 ## Notebooks and code 
 
 - Video predictions using Transformers https://github.com/iamrakesh28/Video-Prediction 
