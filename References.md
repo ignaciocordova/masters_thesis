@@ -9,6 +9,11 @@
 
 ## Papers 
 
+### Next frame prediction 
+
+- Applying attention in next-frame and time series forecasting https://arxiv.org/abs/2108.08224
+
+
 ### Video Vision Transformers 
 
 - ViViT: A Video Vision Transformer [https://arxiv.org/pdf/2103.15691.pdf](https://arxiv.org/pdf/2103.15691.pdf)
@@ -23,10 +28,18 @@
 - Attention is all you need https://arxiv.org/pdf/1706.03762.pdf
 
 ## Notebooks and code 
+
+- Video predictions using Transformers https://github.com/iamrakesh28/Video-Prediction 
+
 - Video Vision Transforming for classification of different organs https://keras.io/examples/vision/vivit/
 
 - Video Vision Transformers for classification of videos https://keras.io/examples/vision/video_transformers/
 
+- Image classification with ViT https://keras.io/examples/vision/image_classification_with_vision_transformer/
+(explained step by steo in this video -> https://www.youtube.com/watch?v=i2_zJ0ANrw0&t=5s&ab_channel=ConnorShorten)
+
+
+----
 ----
 
 ## Key ideas 
