@@ -4,6 +4,7 @@
 
 - (MUY BUENO,BÁSICO) Artículo explicando Transformers: [https://jalammar.github.io/illustrated-transformer/](https://jalammar.github.io/illustrated-transformer/)
 - Video (16min) explicando Transformers [https://www.youtube.com/watch?v=XSSTuhyAmnI&ab_channel=AriSeff](https://www.youtube.com/watch?v=XSSTuhyAmnI&ab_channel=AriSeff)
+- Video (15min) explicando Transformers (muy bueno) https://www.youtube.com/watch?v=4Bdc55j80l8&ab_channel=TheA.I.Hacker-MichaelPhi
 - Curso de Transformers: [https://www.youtube.com/watch?v=0SmNEp4zTpc&ab_channel=LennartSvensson](https://www.youtube.com/watch?v=0SmNEp4zTpc&ab_channel=LennartSvensson)
 - Vision Transformers (1h 6min) [https://www.youtube.com/watch?v=J-utjBdLCTo&ab_channel=AICamp](https://www.youtube.com/watch?v=J-utjBdLCTo&ab_channel=AICamp)
 
