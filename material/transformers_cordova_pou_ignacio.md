@@ -8,8 +8,6 @@ output:
 
 ### by Ignacio Cordova Pou
 
---------------------------------------------------------
-
 1. Introduction 
   
     1.1. Where does the hype come from?
@@ -24,7 +22,9 @@ output:
 
     2.3. The Transformer step by step
 
-3. Transformer as a general architecture
+3. The Transformer in computer vision 
+
+  
 
 \pagebreak
 
@@ -123,5 +123,81 @@ Given the sentence "The dog stayed at home because it was tired" it translates t
 The illustrations presented by the authors use black arrows to represent the queries Q, the keys K and the values V used to compute the attention scores and the contextualized representations of the tokens. A close look to where the arrows come from reveals wether the attention is self-attention or cross-attention.
 
 ![Self-attention and cross-attention used by the Transformer](./figures/self_vs_cross.png)
+
+\pagebreak
+
+
+### 2.3. The Transformer step by step
+
+#### 2.3.1. Inputs and outputs
+
+The Transformer takes as input a sequence of tokens. This tokens can be letters, words, subwords and even image patches, depending on the problem we are trying to solve. The output of the Transformer varies also depending on the problem. In the case of machine translation the outputs are the words of the translated sentence. Note that the ouput that has been generated so far is used by the decoder to predict the next word.
+
+#### 2.3.2. Embeddings
+
+The first step is to convert the input tokens into vectors. This is done by using the embeddings. The embeddings can be learnable or one could use pre-trained embeddings.
+
+#### 2.3.3. Positional encoding
+
+Note that from what we have seen so far, the Transformer does not have any notion of the order of the words in the input sequence. This is a problem because the order of the words is important in many tasks. The authors solve this problem by adding a positional encoding to the embeddings. The positional encoding is a vector of the same size as the embeddings where the value of each element is a function of the position of the word in the sequence. This way, if a sentence contains the word "it" twice, for example, the embedding+positional encoding of the first "it" will be different from the embedding+positional encoding of the second "it". 
+
+#### 2.3.4. Multi-head attention
+
+Let's first focus on a single head attention. As we saw in section *2.2.1. Self-attention* the attention mechanism consists of three learnable matrices: $W^Q$, $W^K$ and $W^V$. These matrices are used to compute the query, key and value vectors of each input $x_i$ vector. The key is that the process to compute the socres and the weights of the weighted sum (the new representation of each input token) is easily parallelizable. The first step is to stack the words in a matrix X: 
+
+$$
+X = \begin{bmatrix}
+\dots x_1 \dots \\
+\dots x_2 \dots \\
+\vdots \\
+\dots x_n \dots
+\end{bmatrix}
+$$
+
+The next step is to compute the query, key and value vectors for each word in the sequence. This is done by multiplying the matrix X by the matrices $W^Q$, $W^K$ and $W^V$ respectively.
+
+$$
+\begin{aligned}
+Q &= X \cdot W^Q \ ; \ \
+K &= X \cdot W^K \ ; \ \
+V &= X \cdot W^V
+\end{aligned}
+$$
+
+!["The attention mechanism computes a linear combination over values via attention pooling, where weights are derived according to the compatibility between a query and keys. Source: www.d2l.ai/"](./figures/attention_pooling.png){height="200" width="300"}
+
+
+The next step is to compute the attention scores. This is done by computing the dot product between the query vector $q_i$ and the key vector of each word in the sentence, scaling the results by $1/\sqrt{d_k}$ and applying the softmax function. The result is the weights $w_i$ for each word $x_i$ in the sentence. This attention score is used to compute the weighted average using the value vectors $v_i$.
+
+$$
+Attention(Q,K,V) = softmax(\frac{QK^T}{\sqrt{d_k}}) \cdot V
+$$ 
+
+When talking about multihead attention, the authors are referring to the fact that we can compute multiple attention heads in parallel. One possible interpretation is that this allows the trasnformer to pay "different kinds of attention" using each one of its heads. In practice, we can train in parallel $W_i^Q$, $W_i^K$ and $W_i^V$ for each head $i$. In the paper the authors use $h=8$ heads and the resulting matrices are concatenated and multiplied by a learnable matrix $W^O$ to obtain the final representation of the input sequence.
+
+$$
+MultiHeadAttention(Q,K,V) = Concat(head_1, \dots, head_h) \cdot W^O
+$$
+$$
+head_i = Attention(Q_i, K_i, V_i)
+$$
+
+Note: this is a slightly different notation that the one used in the papers.
+
+#### 2.3.5. Add and norm
+
+The transformer contains a residual connection and a layer normalization. The residual connection is used to avoid the vanishing gradient problem by adding the input to the output of the layer. The layer normalization is used to normalize the output and it is one of the many computational tricks to make life easier for training the model by imporving the performance and reducing the training time. 
+
+#### 2.3.6. Position-wise Feed-Forward Networks
+
+Once all tokens have been encoded using self-attention, the vectors are fed to a feed-forward network. This consists of two linear transformations with a ReLU activation in between. While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1. 
+
+Here ends the encoder of the transformer. The output of the encoder is an abstract representation of each one of the input tokens. One could stack a second encoder in series to the first one. This second encoder would receive the abstract representation from the first encoder and perform self atention, position-wise feed forward network, etc.
+
+TODO: 
+- Masked self-attention
+- Output of decoder to linear and softmax, 
+
+## 3. Transformer as a general achitecture
 
 

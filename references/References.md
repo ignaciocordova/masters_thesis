@@ -2,6 +2,7 @@
 
 ## General
 
+- (Łukasz Kaiser-Google Brain): [https://www.youtube.com/watch?v=rBCqOTEfxvg&ab_channel=PiSchool] (https://www.youtube.com/watch?v=rBCqOTEfxvg&ab_channel=PiSchool)
 - (MUY BUENO,BÁSICO) Artículo explicando Transformers: [https://jalammar.github.io/illustrated-transformer/](https://jalammar.github.io/illustrated-transformer/)
 - Video (16min) explicando Transformers [https://www.youtube.com/watch?v=XSSTuhyAmnI&ab_channel=AriSeff](https://www.youtube.com/watch?v=XSSTuhyAmnI&ab_channel=AriSeff)
 - Video (15min) explicando Transformers (muy bueno) https://www.youtube.com/watch?v=4Bdc55j80l8&ab_channel=TheA.I.Hacker-MichaelPhi
@@ -18,7 +19,10 @@
 ### Video Vision Transformers 
 
 - ViViT: A Video Vision Transformer [https://arxiv.org/pdf/2103.15691.pdf](https://arxiv.org/pdf/2103.15691.pdf)
+
 - Is Space-Time Attention All You Need for Video Understanding? [https://arxiv.org/abs/2102.05095](https://arxiv.org/abs/2102.05095)
+
+  (3) space-time positional embedding
 
 ### Transformers for images 
 
