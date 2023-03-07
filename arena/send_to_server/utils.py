@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 
-def get_data_and_target_of_interest(df, target_df, coordenates_of_interest, channels):
+def get_data_and_target(df, target_df, coordenates_of_interest, channels, normalize_target=False, INSTALLED_POWER=17500):
     """
     Returns data of interest from df and target_df
 
@@ -19,34 +19,58 @@ def get_data_and_target_of_interest(df, target_df, coordenates_of_interest, chan
         List with the coordinates of interest.
     channels : list
         List with the channel names to build the image.
+    normalize_target : bool, optional
+        If True, the target is normalized dividing by the maximum power. The default is False.
     
     Returns
     -------
     data_of_interest : torch tensor
+        Shape: (n_samples, n_channels, 9, 9)
         Tensor with all the images of the coordinates of interest.
     target_of_interest : torch tensor
+        Shape: (n_samples)
         Tensor with the target of interest.
 
     """
-    # keep columns that contain any of the coordinates of interest
-    df = df.loc[:, df.columns.str.contains('|'.join(coordenates_of_interest))]
+    # filter out unwanted columns to keep only the coordinates of interest
+    df = df.filter(regex='|'.join(coordenates_of_interest))
 
-    # get data of interest
-    data_of_interest = []
-    for i in range(df.shape[0]):
-        image = []
-        for channel in channels: 
-            image.append(df.loc[i, df.columns.str.contains(channel)].values.reshape(9,9))
-        data_of_interest.append(image)
+    # create images
+    data_of_interest = create_images(df, channels, image_size=9)
     
-    # transform data to tensor
-    data_of_interest = torch.tensor(np.array(data_of_interest, dtype=np.float32))
-    
-    # get target of interest
-    target_of_interest = torch.tensor(np.array(target_df['Target (KWh)'].values, dtype=np.float32))
-        
-    return target_of_interest, data_of_interest
+    # normalize target if needed
+    target = target_df[1].values.astype(np.float32)
+    if normalize_target:
+        target /= INSTALLED_POWER
+
+    return data_of_interest, torch.from_numpy(target)
 
 
+def create_images(df, channels, image_size):
+    """
+    Creates images from the data in df.
 
+    Parameters
+    ----------
+    df : pandas dataframe
+        Dataframe with all the data.
+    channels : list
+        List with the channel names to build the image.
+    image_size : int
+        Size of the image.
+
+    Returns
+    -------
+    images : torch tensor
+        Shape: (n_samples, n_channels, image_size, image_size)
+        Tensor with all the images of the coordinates of interest.
+
+    """
+    images = np.zeros((df.shape[0], len(channels), image_size, image_size), dtype=np.float32)
+
+    for i, channel in enumerate(channels):
+        channel_data = df.filter(regex=channel).values.reshape(df.shape[0], image_size, image_size)
+        images[:, i, :, :] = channel_data
+
+    return torch.from_numpy(images)
 

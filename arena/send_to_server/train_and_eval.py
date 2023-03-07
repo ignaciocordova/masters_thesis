@@ -8,32 +8,27 @@ from torch.utils.data import Dataset, DataLoader
 import utils
 from my_models import regression_ViT as ViT
 
+import warnings
+warnings.filterwarnings("ignore", 'This pattern has match groups')
 
 
-training_df = pd.read_csv(<INSERT PATH TO CSV HERE>)
-target_df = pd.read_csv(<INSERT PATH TO CSV HERE>)
+#_________________________DATA_____________________________
+PATH = './data/'
 
-test_df = pd.read_csv(<INSERT PATH TO CSV HERE>)
-test_target_df = pd.read_csv(<INSERT PATH TO CSV HERE>)
+training_df = pd.read_csv(PATH+'EjemploDatos.csv')
+target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+
+test_df = pd.read_csv(PATH+'EjemploDatos.csv')
+test_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
 
 
 #_________________________PARAMETERS___________________________
-BATCH_SIZE = 100
-EPOCHS = 100
-LEARNING_RATE = 0.0001
+BATCH_SIZE = 2
+EPOCHS = 2
+LEARNING_RATE = 0.001
 INSTALLED_POWER = 17500
 
-#__________________________MODEL_____________________________
-model = ViT(image_size=9, 
-            patch_size=3, 
-            channels=8,
-            dim=64, 
-            depth=6, 
-            heads=8, 
-            mlp_dim=128)
-
-
-
+#_________________________DATA OF INTEREST_____________________________
 coordenates_of_interest = ['prediction date',
 
                             '(43.875, -8.375)', '(43.75, -8.375)', '(43.625, -8.375)', '(43.5, -8.375)', '(43.375, -8.375)', '(43.25, -8.375)', '(43.125, -8.375)', '(43.0, -8.375)', '(42.875, -8.375)',
@@ -59,14 +54,24 @@ coordenates_of_interest = ['prediction date',
 channels = ['10u', '10v', '2t', 'sp', '100u', '100v', 'vel10_', 'vel100']
 
 #_________________________TRAINING DATA___________________________
-labels, data = utils.get_data_and_target_of_interest(training_df, target_df, coordenates_of_interest, channels)
+data, labels = utils.get_data_and_target(training_df, target_df, coordenates_of_interest, channels, normalize_target=False)
 trainset = torch.utils.data.TensorDataset(data, labels)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
 
 #_________________________TEST DATA___________________________
-test_labels, test_data = utils.get_data_and_target_of_interest(test_df, test_target_df, coordenates_of_interest, channels)
+test_data, test_labels = utils.get_data_and_target(test_df, test_target_df, coordenates_of_interest, channels, normalize_target=False)
 testset = torch.utils.data.TensorDataset(test_data, test_labels)
 testloader = torch.utils.data.DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
+
+
+#__________________________MODEL_____________________________
+model = ViT(image_size=9, # according to the coordinates of interest 
+            patch_size=3, 
+            channels=8,   # according to the channels chosen
+            dim=64, 
+            depth=6, 
+            heads=8, 
+            mlp_dim=128)
 
 
 #_________________________TRAINING THE MODEL___________________________
@@ -95,8 +100,8 @@ for epoch in range(EPOCHS):  # loop over the dataset multiple times
         optimizer.step()
      
         # verbosity 
-        if (i+1)%10000 == 0:
-            print(f'epoch {epoch+1}/{EPOCHS}; step {i+1}/{n_total_steps}, loss={loss.item():.4f}') 
+        if (i+1)%1 == 0:
+            print(f'EPOCH {epoch+1}/{EPOCHS}; ITERATION {i+1}/{n_total_steps}, LOSS={loss.item():.4f}') 
        
 print('Finished Training')
 
@@ -105,8 +110,10 @@ total_samples = len(testloader.dataset)
 total_loss = 0
 total_loss2 = 0
 
-criterion2 = nn.MAELoss()
+criterion2 = nn.L1Loss()
 
+print('')
+print('Testing the model...')
 with torch.no_grad():
     for data, target in testloader:
         
