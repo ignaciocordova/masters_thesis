@@ -12,14 +12,24 @@ import warnings
 warnings.filterwarnings("ignore", 'This pattern has match groups')
 
 
-#_________________________DATA_____________________________
-PATH = './data/'
+#_________________DATA LOADED INTO MEMORY_____________________________
+#PATH = './data/'
 
-training_df = pd.read_csv(PATH+'EjemploDatos.csv')
-target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+#training_df = pd.read_csv(PATH+'EjemploDatos.csv')
+#target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
 
-test_df = pd.read_csv(PATH+'EjemploDatos.csv')
-test_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+#test_df = pd.read_csv(PATH+'EjemploDatos.csv')
+#test_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+
+#_________TRAINING DATA_____________
+#data, labels = utils.get_data_and_target(training_df, target_df, coordenates_of_interest, channels, normalize_target=False)
+#trainset = torch.utils.data.TensorDataset(data, labels)
+#trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
+
+#_________TEST DATA_________________
+#test_data, test_labels = utils.get_data_and_target(test_df, test_target_df, coordenates_of_interest, channels, normalize_target=False)
+#testset = torch.utils.data.TensorDataset(test_data, test_labels)
+#testloader = torch.utils.data.DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
 
 
 #_________________________PARAMETERS___________________________
@@ -29,7 +39,7 @@ LEARNING_RATE = 0.001
 INSTALLED_POWER = 17500
 
 #_________________________DATA OF INTEREST_____________________________
-coordenates_of_interest = ['prediction date',
+coordinates_of_interest = ['prediction date',
 
                             '(43.875, -8.375)', '(43.75, -8.375)', '(43.625, -8.375)', '(43.5, -8.375)', '(43.375, -8.375)', '(43.25, -8.375)', '(43.125, -8.375)', '(43.0, -8.375)', '(42.875, -8.375)',
 
@@ -53,15 +63,78 @@ coordenates_of_interest = ['prediction date',
 
 channels = ['10u', '10v', '2t', 'sp', '100u', '100v', 'vel10_', 'vel100']
 
-#_________________________TRAINING DATA___________________________
-data, labels = utils.get_data_and_target(training_df, target_df, coordenates_of_interest, channels, normalize_target=False)
-trainset = torch.utils.data.TensorDataset(data, labels)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
 
-#_________________________TEST DATA___________________________
-test_data, test_labels = utils.get_data_and_target(test_df, test_target_df, coordenates_of_interest, channels, normalize_target=False)
-testset = torch.utils.data.TensorDataset(test_data, test_labels)
-testloader = torch.utils.data.DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
+
+#_________________DATA ACCESED FROM DISK_____________________________
+
+
+df_file_path = './data/EjemploDatos.csv'
+target_file_path = './data/EjemploTarget.csv'
+class CustomDataset(Dataset):
+    def __init__(self, df_file_path, target_file_path, coordinates_of_interest, channels, normalize_target=True,
+                 INSTALLED_POWER=INSTALLED_POWER, image_size=9):
+        self.df_file_path = df_file_path
+        self.target_file_path = target_file_path
+        self.coordinates_of_interest = coordinates_of_interest
+        self.channels = channels
+        self.normalize_target = normalize_target
+        self.INSTALLED_POWER = INSTALLED_POWER
+        self.image_size = image_size
+
+        # read target file to memory
+        self.target_df = pd.read_csv(target_file_path)
+
+    def __len__(self):
+        return len(self.target_df)
+
+    def __getitem__(self, idx):
+        # read df file for specific row
+        row_df = pd.read_csv(self.df_file_path, skiprows=range(1, idx + 1), nrows=1)
+
+        # keep columns that contain any of the coordinates of interest
+        row_df = row_df.filter(regex='|'.join(self.coordinates_of_interest))
+
+        # get data of interest
+        image = self.create_image(row_df, self.channels, image_size=self.image_size)
+
+        # get target of interest
+        target = torch.tensor(self.target_df.iloc[idx, 1], dtype=torch.float32)
+
+        if self.normalize_target:
+            target = target / self.INSTALLED_POWER
+
+        return image, target
+
+    def create_image(self, df, channels, image_size):
+        """
+        Creates images from the data in df.
+
+        Parameters
+        ----------
+        df : pandas dataframe
+            Dataframe with all the data.
+        channels : list
+            List with the channel names to build the image.
+        image_size : int
+            Size of the image.
+
+        Returns
+        -------
+        images : torch tensor
+            Shape:  (n_channels, image_size, image_size)
+            Tensor with all the images of the coordinates of interest.
+
+        """
+        images = np.zeros((len(channels), image_size, image_size), dtype=np.float32)
+
+        for i, channel in enumerate(channels):
+            channel_data = df.filter(regex=channel).values.reshape(image_size, image_size)
+            images[i, :, :] = channel_data
+
+        return torch.from_numpy(images)
+
+trainset = CustomDataset(df_file_path, target_file_path, coordinates_of_interest, channels)
+trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 
 
 #__________________________MODEL_____________________________
@@ -83,10 +156,19 @@ n_total_steps = len(trainloader)
 # train the network
 for epoch in range(EPOCHS):  # loop over the dataset multiple times
 
+    print('Starting epoch: ', epoch+1, '/', EPOCHS, '...')
+
     for i, data in enumerate(trainloader, 0):
+
+        print(i)
         
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
+
+        print('')
+        print('inputs.shape: ', inputs.shape)
+        print('labels.shape: ', labels.shape)
+        print('')
 
         labels = labels.unsqueeze(1).float()
 
