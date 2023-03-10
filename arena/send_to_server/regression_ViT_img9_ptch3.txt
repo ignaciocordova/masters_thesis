@@ -1,0 +1,8 @@
+HYPERPARAMETERS: 
+Image size: 9 Patch size: 3 Channels: 8 
+ Dim: 64 Depth: 4 Heads: 6 MLP dim: 128 
+Batch size: 32 Learning rate: 0.001 Epochs: 4 
+
+EVALUATION RESULTS: 
+NMAE: nan 
+NMSE: nan 

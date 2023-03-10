@@ -14,49 +14,46 @@ import warnings
 import os
 
 #_________________________PARAMETERS___________________________
-
-INSTALLED_POWER = 17500
-IMAGE_SIZE = 9 
-PATCH_SIZE = 3
-
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 EPOCHS = 4
 LEARNING_RATE = 0.001
+INSTALLED_POWER = 17500
+
+IMAGE_SIZE = 9
+PATCH_SIZE = 3
 
 
 #_________________DATA LOADED INTO MEMORY_____________________________
 
-df_2016 = pd.read_csv('data_stv_2016.csv')
-df_2017 = pd.read_csv('data_stv_2017.csv', header=None)
-df_2018 = pd.read_csv('data_stv_2018.csv', header=None)
-
-meta_data = pd.concat([df_2016, df_2017, df_2018], axis=0)
-
-
-target_2016 = pd.read_csv('target_stv_2016.csv', header=None)
-target_2017 = pd.read_csv('target_stv_2017.csv', header=None)
-target_2018 = pd.read_csv('target_stv_2018.csv', header=None)
-
-meta_target = pd.concat([target_2016, target_2017, target_2018], axis=0)
-
-# cambiar 2018 a test set
-
-# warning if meta_data and meta_target have different number of rows
-if meta_data.shape[0] != meta_target.shape[0]:
-    warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
-
-# randomly split meta_data and meta_target into train and test
-train_df, test_df, train_target_df, test_target_df = train_test_split(meta_data, meta_target, test_size=0.2, random_state=42)
+#df_2016 = pd.read_csv('data_stv_2016.csv')
+#df_2017 = pd.read_csv('data_stv_2017.csv', header=None)
+#df_2018 = pd.read_csv('data_stv_2018.csv', header=None)
+#
+#meta_data = pd.concat([df_2016, df_2017, df_2018], axis=0)
+#
+#
+#target_2016 = pd.read_csv('target_stv_2016.csv', header=None)
+#target_2017 = pd.read_csv('target_stv_2017.csv', header=None)
+#target_2018 = pd.read_csv('target_stv_2018.csv', header=None)
+#
+#meta_target = pd.concat([target_2016, target_2017, target_2018], axis=0)
+#
+## warning if meta_data and meta_target have different number of rows
+#if meta_data.shape[0] != meta_target.shape[0]:
+    #warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
+#
+## randomly split meta_data and meta_target into train and test
+#train_df, test_df, train_target_df, test_target_df = train_test_split(meta_data, meta_target, test_size=0.2, random_state=42)
 
 
 #_________________________LOCAL_____________________________
-#PATH = './data/'
-#
-#train_df = pd.read_csv(PATH+'EjemploDatos.csv')
-#train_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
-#
-#test_df = pd.read_csv(PATH+'EjemploDatos.csv')
-#test_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+PATH = './data/'
+
+train_df = pd.read_csv(PATH+'EjemploDatos.csv')
+train_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+
+test_df = pd.read_csv(PATH+'EjemploDatos.csv')
+test_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
 
 
 #_________________________DATA OF INTEREST_____________________________
@@ -110,8 +107,6 @@ else:
     testset = torch.load('./processed_data/testset.pt')
 
 trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
-testloader = DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
-
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -155,51 +150,13 @@ for epoch in range(EPOCHS):  # loop over the dataset multiple times
         optimizer.step()
      
         # verbosity 
-        if (i+1)%100 == 0:
+        if (i+1)%1 == 0:
             print(f'EPOCH {epoch+1}/{EPOCHS}; ITERATION {i+1}/{n_total_steps}, LOSS={loss.item():.4f}') 
        
 print('Finished Training')
 
-#_________________________TESTING THE MODEL___________________________
-total_samples = len(testloader.dataset)
-total_loss = 0
-total_loss2 = 0
 
-criterion2 = nn.L1Loss()
 
-print('')
-print('Testing the model...')
-with torch.no_grad():
-    for data, target in testloader:
-
-        data = data.to(device)
-        target = target.to(device)
-        
-        output = model(data)
-
-        loss = criterion(output, target.unsqueeze(1).float())
-        total_loss += loss.item()
-
-        loss2 = criterion2(output, target.unsqueeze(1).float())
-        total_loss2 += loss2.item()
-
-# normalized mean absolute error
-nmae = total_loss2/(INSTALLED_POWER)
-print(f'NMAE: {nmae:.4f}')
-
-# normalized mean squared error
-nmse = total_loss/(INSTALLED_POWER**2) 
-print(f'NMSE: {nmse:.4f}')
-
-# write evaluation results to file
-with open('{}_img{}_ptch{}.txt'.format(model.__class__.__name__,
-                                         IMAGE_SIZE,
-                                         PATCH_SIZE), 'w') as f:
-    f.write('HYPERPARAMETERS: \n')
-    f.write(f'Image size: {IMAGE_SIZE} Patch size: {PATCH_SIZE} Channels: {8} \n Dim: {64} Depth: {4} Heads: {6} MLP dim: {128} \n')
-    f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
-    f.write('\n')
-    f.write('EVALUATION RESULTS: \n')
-    f.write(f'NMAE: {nmae:.4f} \n')
-    f.write(f'NMSE: {nmse:.4f} \n')
+# save trained model in disk
+torch.save(model.state_dict(), './trained_model.pt')
 
