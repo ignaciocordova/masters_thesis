@@ -46,6 +46,7 @@ def get_data_and_target(df, target_df, coordenates_of_interest, channels, normal
     return data_of_interest, torch.from_numpy(target)
 
 
+
 def create_images(df, channels, image_size):
     """
     Creates images from the data in df.
