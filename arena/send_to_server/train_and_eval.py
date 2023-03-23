@@ -18,16 +18,16 @@ import os
 
 INSTALLED_POWER = 17500
 
-BATCH_SIZE = 16
-EPOCHS = 10
-LEARNING_RATE = 0.003
+BATCH_SIZE = 64
+EPOCHS = 20
+LEARNING_RATE = 0.001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
 CHANNELS = 8
 DIM = 64
-DEPTH = 4       # number of transformer blocks
-HEADS = 4
+DEPTH = 2       # number of transformer blocks
+HEADS = 2
 MLP_DIM = 512    
 
 
@@ -164,7 +164,6 @@ for epoch in range(EPOCHS):  # loop over the dataset multiple times
         inputs = inputs.to(device)
         labels = labels.to(device)
 
-
         # forward + backward + optimize
         output = model(inputs)
         loss = criterion(output, labels)
@@ -179,7 +178,7 @@ for epoch in range(EPOCHS):  # loop over the dataset multiple times
 
         # verbosity 
         if (i+1)%(n_total_steps//4) == 0:
-            print(f'EPOCH {epoch+1}/{EPOCHS}; ITERATION {i+1}/{n_total_steps}, LOSS={loss.item():.4f}') 
+            print(f'EPOCH {epoch+1}/{EPOCHS}; ITERATION {i+1}/{n_total_steps}, BATCH_NMAE={loss.item()/INSTALLED_POWER:.4f}') 
             
 
                     
@@ -208,10 +207,10 @@ with torch.no_grad():
         output = model(data)
 
         loss = criterion(output, target.unsqueeze(1).float())
-        total_loss += loss.item()
+        total_loss += loss.item()/INSTALLED_POWER
 
         loss2 = criterion2(output, target.unsqueeze(1).float())
-        total_loss2 += loss2.item()
+        total_loss2 += loss2.item()/(INSTALLED_POWER**2)
 
 
 # normalized mean absolute error
