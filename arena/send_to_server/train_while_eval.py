@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 import torch 
 import torch.nn as nn
@@ -139,15 +140,23 @@ model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest
             heads=HEADS, 
             mlp_dim=MLP_DIM).to(device)
 
-#_________________________TRAINING THE MODEL___________________________
+#_________________________TRAINING AND TESTING THE MODEL___________________________
+
 criterion = nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-# train the network
+train_losses = []
+eval_losses = []
+
+n_batches = len(testloader)
+
+# train and evaluate the network
 for epoch in range(EPOCHS):
 
     epoch_loss = 0
 
+    # training
+    model.train()
     for i, (inputs, labels) in enumerate(trainloader):
         labels = labels.unsqueeze(1).float().to(device)
 
@@ -168,20 +177,51 @@ for epoch in range(EPOCHS):
             print(f'EPOCH {epoch+1}/{EPOCHS}; ITERATION {i+1}/{len(trainloader)}, BATCH_NMAE={batch_nmae:.4f}')
 
     avg_loss = epoch_loss / (len(trainloader)*INSTALLED_POWER)
-    print(f'Epoch {epoch+1}/{EPOCHS} - Average loss: {avg_loss:.4f}')         
+    train_losses.append(avg_loss)         
+
+    # evaluation
+    model.eval()
+    eval_loss = 0
+    with torch.no_grad():
+        for data, target in testloader:
+
+            data = data.to(device)
+            target = target.to(device)
+
+            output = model(data)
+
+            loss = criterion(output, target.unsqueeze(1).float())
+            eval_loss += loss.item()/INSTALLED_POWER
+
+    avg_eval_loss = eval_loss/n_batches
+    eval_losses.append(avg_eval_loss)
+
+    print(f'EPOCH {epoch+1}/{EPOCHS}, TRAIN_LOSS={avg_loss:.4f}, EVAL_LOSS={avg_eval_loss:.4f}')
 
 
 print('Finished Training')
 
-#_________________________TESTING THE MODEL___________________________
-n_batches = len(testloader)
+# plot losses
+plot = input("Do you want to plot the losses? (y/n)")
+if plot == "y":
+    plt.plot(train_losses, label='Training Loss')
+    plt.plot(eval_losses, label='Evaluation Loss')
+    plt.legend()
+    plt.show()
+
+#_________________________EVALUATION OF THE MODEL___________________________
+
+eval = input("Do you want to evaluate the model? (y/n)")
+if eval == "n":
+    exit()
+
 total_loss = 0
 total_loss2 = 0
 
 criterion2 = nn.MSELoss()
 
 print('')
-print('Testing the model...')
+print('Evaluating the model...')
 model.eval()
 with torch.no_grad():
     for data, target in testloader:
@@ -206,7 +246,7 @@ print(f'NMAE: {nmae:.4f}')
 nmse = total_loss2/n_batches
 print(f'NMSE: {nmse:.4f}')
 
-ans = input('Do you want to create a file with the results and characteristics of the model?')
+ans = input('Do you want to save results and characteristics of the model?')
 if ans=='y':
     # write evaluation results to file
     date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
