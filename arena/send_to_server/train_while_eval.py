@@ -19,8 +19,8 @@ import os
 
 INSTALLED_POWER = 17500
 
-BATCH_SIZE = 64
-EPOCHS = 15
+BATCH_SIZE = 128
+EPOCHS = 50
 LEARNING_RATE = 0.001
 
 IMAGE_SIZE = 9 
@@ -207,7 +207,9 @@ if plot == "y":
     plt.plot(train_losses, label='Training Loss')
     plt.plot(eval_losses, label='Evaluation Loss')
     plt.legend()
-    plt.show()
+    # save figure in a document with the name of the model and the date
+    plt.savefig(f'./figures//LOSSES_{model.__class__.__name__}_{datetime.now().strftime("%m_%d-%I_%M_%p")}.png')
+
 
 #_________________________EVALUATION OF THE MODEL___________________________
 
@@ -250,7 +252,7 @@ ans = input('Do you want to save results and characteristics of the model?')
 if ans=='y':
     # write evaluation results to file
     date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
-    with open('{}_img{}_ptch{}_{}.txt'.format(model.__class__.__name__,
+    with open('./results/{}_img{}_ptch{}_{}.txt'.format(model.__class__.__name__,
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             date_string), 'w') as f:
