@@ -19,8 +19,15 @@ import os
 
 INSTALLED_POWER = 17500
 
+# si quieres aumentar las coordenadas tendras que calcular las nuevas 
+# dimensiones de la imagen (de 8 canales)
+MAX_LAT = 43.875
+MIN_LAT = 42.875
+MAX_LON = -7.375
+MIN_LON = -8.375
+
 BATCH_SIZE = 128
-EPOCHS = 50
+EPOCHS = 16
 LEARNING_RATE = 0.001
 
 IMAGE_SIZE = 9 
@@ -29,41 +36,15 @@ CHANNELS = 8
 DIM = 64
 DEPTH = 2       # number of transformer blocks
 HEADS = 2
-MLP_DIM = 512    
-
-
-#_________________________LOCAL_____________________________
-#PATH = './data/'
-#
-#train_df = pd.read_csv(PATH+'EjemploDatos.csv')
-#train_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
-#
-#test_df = pd.read_csv(PATH+'EjemploDatos.csv')
-#test_target_df = pd.read_csv(PATH+'EjemploTarget.csv', header=None)
+MLP_DIM = 64    
 
 
 #_________________________DATA OF INTEREST_____________________________
-coordinates_of_interest = ['prediction date',
+coordinates_of_interest = ['prediction date']
 
-                            '(43.875, -8.375)', '(43.75, -8.375)', '(43.625, -8.375)', '(43.5, -8.375)', '(43.375, -8.375)', '(43.25, -8.375)', '(43.125, -8.375)', '(43.0, -8.375)', '(42.875, -8.375)',
-
-                            '(43.875, -8.25)', '(43.75, -8.25)', '(43.625, -8.25)', '(43.5, -8.25)', '(43.375, -8.25)', '(43.25, -8.25)', '(43.125, -8.25)', '(43.0, -8.25)', '(42.875, -8.25)',
-                            
-                            '(43.875, -8.125)', '(43.75, -8.125)', '(43.625, -8.125)', '(43.5, -8.125)', '(43.375, -8.125)', '(43.25, -8.125)', '(43.125, -8.125)', '(43.0, -8.125)', '(42.875, -8.125)',
-
-                           '(43.875, -8.0)', '(43.75, -8.0)', '(43.625, -8.0)', '(43.5, -8.0)', '(43.375, -8.0)', '(43.25, -8.0)', '(43.125, -8.0)', '(43.0, -8.0)', '(42.875, -8.0)',
-                        
-                           '(43.875, -7.875)','(43.75, -7.875)','(43.625, -7.875)','(43.5, -7.875)','(43.375, -7.875)','(43.25, -7.875)','(43.125, -7.875)','(43.0, -7.875)','(42.875, -7.875)',
-
-                            '(43.875, -7.75)','(43.75, -7.75)','(43.625, -7.75)','(43.5, -7.75)','(43.375, -7.75)','(43.25, -7.75)','(43.125, -7.75)','(43.0, -7.75)','(42.875, -7.75)',
-
-                            '(43.875, -7.625)','(43.75, -7.625)','(43.625, -7.625)','(43.5, -7.625)','(43.375, -7.625)','(43.25, -7.625)','(43.125, -7.625)','(43.0, -7.625)','(42.875, -7.625)',
-
-                            '(43.875, -7.5)','(43.75, -7.5)','(43.625, -7.5)','(43.5, -7.5)','(43.375, -7.5)','(43.25, -7.5)','(43.125, -7.5)','(43.0, -7.5)','(42.875, -7.5)',
-
-                            '(43.875, -7.375)','(43.75, -7.375)','(43.625, -7.375)','(43.5, -7.375)','(43.375, -7.375)','(43.25, -7.375)','(43.125, -7.375)','(43.0, -7.375)','(42.875, -7.375)',
-                            
-                           ]
+for lat in np.arange(MAX_LAT, MIN_LAT-0.125, -0.125):
+    for lon in np.arange(MIN_LON, MAX_LON+0.125, 0.125):
+        coordinates_of_interest.append(f'({lat}, {lon})')
 
 channels = ['10u', '10v', '2t', 'sp', '100u', '100v', 'vel10_', 'vel100']
 
@@ -172,7 +153,7 @@ for epoch in range(EPOCHS):
             print('Loss is nan. Stopping training.')
             break
 
-        if (i+1) % (len(trainloader)//4) == 0:
+        if (i+1) % (len(trainloader)//2) == 0:
             batch_nmae = loss.item() / INSTALLED_POWER
             print(f'EPOCH {epoch+1}/{EPOCHS}; ITERATION {i+1}/{len(trainloader)}, BATCH_NMAE={batch_nmae:.4f}')
 
@@ -248,7 +229,7 @@ print(f'NMAE: {nmae:.4f}')
 nmse = total_loss2/n_batches
 print(f'NMSE: {nmse:.4f}')
 
-ans = input('Do you want to save results and characteristics of the model?')
+ans = input('Do you want to save results and characteristics of the model? (y/n)')
 if ans=='y':
     # write evaluation results to file
     date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
@@ -261,6 +242,7 @@ if ans=='y':
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
 
         f.write('HYPERPARAMETERS: \n')
+        f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
         f.write(f'Image size: {IMAGE_SIZE} \n Patch size: {PATCH_SIZE} \n Channels: {CHANNELS} \n Dim: {DIM} \n Depth: {DEPTH} \n Heads: {HEADS} \n MLP dim: {MLP_DIM} \n')
         f.write('\n')
         f.write('EVALUATION RESULTS: \n')
