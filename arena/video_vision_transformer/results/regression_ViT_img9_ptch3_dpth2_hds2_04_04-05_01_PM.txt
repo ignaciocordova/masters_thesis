@@ -1,0 +1,15 @@
+TRAINING PARAMETERS: 
+Batch size: 128 Learning rate: 0.001 Epochs: 20 
+HYPERPARAMETERS: 
+Lat and Lon 43.875,42.875; -7.375,-8.375 
+Image size: 9 
+ Patch size: 3 
+ Channels: 8 
+ Dim: 64 
+ Depth: 2 
+ Heads: 2 
+ MLP dim: 64 
+
+EVALUATION RESULTS: 
+NMAE: 0.0704 
+NMSE: 0.0118 

@@ -138,7 +138,7 @@ class regression_ViT(nn.Module):
     
 
 class ViViT(nn.Module):
-    def __init__(self, image_size, patch_size, num_classes, num_frames, dim = 192, depth = 4, heads = 3, pool = 'cls', in_channels = 3, dim_head = 64, dropout = 0.,
+    def __init__(self, image_size, patch_size, num_frames, dim = 192, depth = 4, heads = 3, pool = 'cls', in_channels = 3, dim_head = 64, dropout = 0.,
                  emb_dropout = 0., scale_dim = 4, ):
         super().__init__()
         
@@ -163,10 +163,6 @@ class ViViT(nn.Module):
         self.dropout = nn.Dropout(emb_dropout)
         self.pool = pool
 
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
-            nn.Linear(dim, num_classes)
-        )
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(dim),
             nn.Linear(dim, 32),
