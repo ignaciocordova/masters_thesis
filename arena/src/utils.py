@@ -143,27 +143,39 @@ def get_data_and_target_with_all_coordinates(df, target_df, coordinates_of_inter
     return data_of_interest, torch.from_numpy(target)
 
 
-def create_videos_from_images(images, n_frames=10):
+def create_video_dataset(dataloader, NUM_FRAMES, OVERLAP_SIZE):
     """
-    Creates videos from images.
+    Creates a video dataset from an image dataloader with batch_size=1.
 
     Parameters
     ----------
-    images : torch tensor
-        Shape: (n_samples, n_channels, image_size, image_size)
-        Tensor with all the images of the coordinates of interest.
-    n_frames : int, optional
-        Number of frames. The default is 10.
+    dataloader : torch.utils.data.DataLoader
+        Dataloader for the dataset.
+    NUM_FRAMES : int
+        Number of frames to build each video.
+    OVERLAP_SIZE : int
+        Number of frames that overlap between consecutive videos.
 
     Returns
     -------
-    videos : torch tensor
-        Shape: (n_samples, n_channels, n_frames, image_size, image_size)
-        Tensor with all the videos of the coordinates of interest.
-
+    List
+        A list containing the video dataset. Each element of the list is a tuple, containing a video tensor of shape 
+        (NUM_FRAMES, C, H, W) and a label tensor of shape (1), where C, H, and W are the number of channels, height, 
+        and width of each image in the dataset, respectively.
     """
-    videos = torch.zeros((images.shape[0], images.shape[1], n_frames, images.shape[2], images.shape[3]), dtype=torch.float32)
-    for i in range(n_frames):
-        videos[:, :, i, :, :] = images
 
-    return videos
+    video_dataset = []
+    video = []
+    for i, (image, label) in enumerate(dataloader):
+        video.extend(image)
+        if len(video) == NUM_FRAMES:
+            for j in range(NUM_FRAMES - OVERLAP_SIZE):
+                video_dataset.append((torch.stack(video[j:j+NUM_FRAMES]), label))
+            video = video[NUM_FRAMES - OVERLAP_SIZE:]
+
+    # handle the remaining frames that don't form a complete video
+    if len(video) > 0:
+        for j in range(len(video) - NUM_FRAMES + 1):
+            video_dataset.append((torch.stack(video[j:j+NUM_FRAMES]), label))
+
+    return video_dataset

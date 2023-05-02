@@ -60,20 +60,16 @@ if answer == 'y':
     #_________________DATA LOADED INTO MEMORY_____________________________
 
     # TAINING DATA
-    df_2016 = pd.read_csv('data_stv_2016.csv')
-    df_2017 = pd.read_csv('data_stv_2017.csv')
-
-    meta_data = pd.concat([df_2016, df_2017], axis=0)
+    meta_data = pd.concat([pd.read_csv('data_stv_2016.csv'),
+                            pd.read_csv('data_stv_2017.csv')], axis=0)
 
     # feature scale the data ignoring the first column
     scaler = StandardScaler()
     meta_data.iloc[:, 1:] = scaler.fit_transform(meta_data.iloc[:, 1:])
 
     # TRAINING TARGET
-    target_2016 = pd.read_csv('target_stv_2016.csv', header=None)
-    target_2017 = pd.read_csv('target_stv_2017.csv', header=None)
-
-    meta_target = pd.concat([target_2016, target_2017], axis=0)
+    meta_target = pd.concat([pd.read_csv('target_stv_2016.csv', header=None),
+                              pd.read_csv('target_stv_2017.csv', header=None)], axis=0)
 
     # TEST DATA
     df_2018 = pd.read_csv('data_stv_2018.csv')
@@ -88,7 +84,7 @@ if answer == 'y':
     if meta_data.shape[0] != meta_target.shape[0]:
         warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
 
-
+    # extracting data of interest from dataset
     data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=False)
     trainset = torch.utils.data.TensorDataset(data, labels)
 
@@ -119,38 +115,10 @@ testloader = DataLoader(testset, batch_size=1, shuffle=False)
 # ask the user if he wants to create the train and test sets or load them from disk
 answer = input('Do you want to create the overlap VIDEO train and test sets? (y/n)')
 if answer == 'y':
-    # iterate over the trainloader and create the video trainset
-    video_trainset = []
-    video = []
-    for i, (image, label) in enumerate(trainloader):
-        video.extend(image)
-        if len(video) == NUM_FRAMES:
-            for j in range(NUM_FRAMES - OVERLAP_SIZE):
-                video_trainset.append((torch.stack(video[j:j+NUM_FRAMES]), label))
-            video = video[NUM_FRAMES - OVERLAP_SIZE:]
-
-    # handle the remaining frames that don't form a complete video
-    if len(video) > 0:
-        for j in range(len(video) - NUM_FRAMES + 1):
-            video_trainset.append((torch.stack(video[j:j+NUM_FRAMES]), label))
-
-
-    # iterate over the testloader and create the video testset
-    video_testset = []
-    video = []
-    for i, (image, label) in enumerate(testloader):
-        video.extend(image)
-        if len(video) == NUM_FRAMES:
-            for j in range(NUM_FRAMES - OVERLAP_SIZE):
-                video_testset.append((torch.stack(video[j:j+NUM_FRAMES]), label))
-            video = video[NUM_FRAMES - OVERLAP_SIZE:]
     
-    # handle the remaining frames that don't form a complete video
-    if len(video) > 0:
-        for j in range(len(video) - NUM_FRAMES + 1):
-            video_testset.append((torch.stack(video[j:j+NUM_FRAMES]), label))
+    video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
+    video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
-    
     # create the directory if it doesn't exist
     if not os.path.exists('./overlap_processed_data'):
         os.makedirs('./overlap_processed_data')
@@ -167,34 +135,8 @@ else:
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
 
-# print a complete analysis of the dimension of data and labels of video_trainset and video_testset
 print('First label should be 9886.56: {}'.format(video_trainset[0][1]))
-
-# print a complete analysis of trainset shapes and sizes 
-print('Trainset shapes and sizes:')
-print('I expect it to be input [32 8 8 9 9] and label [32 1]')
-for i, (image, label) in enumerate(video_trainloader):
-
-    print('Input shape: {}'.format(image.shape))
-    print('Label shape: {}'.format(label.shape))
-    print('')
-    print('Input size: {}'.format(image.size()))
-    print('Label size: {}'.format(label.size()))
-    print('')
-    print('Input type: {}'.format(image.type()))
-    print('Label type: {}'.format(label.type()))
-    print('')
-    print('Input dtype: {}'.format(image.dtype))
-    print('Label dtype: {}'.format(label.dtype))
-    print('')
-    print('Input ndim: {}'.format(image.ndim))
-    print('Label ndim: {}'.format(label.ndim))
-    print('')
-    break 
-
-print('Number of training samples: {}'.format(len(video_trainset)))
-print('Number of testing samples: {}'.format(len(video_testset)))
-
+print('Second label should be 13056.48 : {}'.format(video_trainset[1][1]))
 
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
