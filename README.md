@@ -3,8 +3,8 @@ Wind Power Prediction using Video Vision Transformers for spatial and temporal i
 
 TO DO LIST 
 
-AÑADIR A TEST LAS ULTIMAS 8 HORAS DEL AÑO ANTERIOR 
-PROBAR TODAS LAS COORDENADAS  
+AÑADIR A TEST LAS ULTIMAS 8 HORAS DEL AÑO ANTERIOR (en video)
+PROBAR TODAS LAS COORDENADAS  hecho! 
 
 - Get all datasets 
 - Add information about past POWER values to the model

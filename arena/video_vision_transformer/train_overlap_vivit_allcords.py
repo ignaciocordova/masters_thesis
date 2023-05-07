@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
 import utils
-from my_models import ViViT
+from my_models import ViViT as allcords_overlap_vivit
 
 from datetime import datetime
 import warnings
@@ -21,10 +21,10 @@ INSTALLED_POWER = 17500
 
 # si quieres aumentar las coordenadas tendras que calcular las nuevas 
 # dimensiones de la imagen (de 8 canales)
-MAX_LAT = 43.875
-MIN_LAT = 42.875
-MAX_LON = -7.375
-MIN_LON = -8.375
+MAX_LAT = 44.0
+MIN_LAT = 42.25
+MAX_LON = -6.125
+MIN_LON = -9.375
 
 NUM_FRAMES = 8 # number of frames in the video
 OVERLAP_SIZE = 7 #number of overlaping frames
@@ -33,7 +33,7 @@ BATCH_SIZE = 64
 EPOCHS = 150
 LEARNING_RATE = 0.0001
 
-IMAGE_SIZE = 9 
+IMAGE_SIZE = 27 
 PATCH_SIZE = 3
 CHANNELS = 8
 DIM = 64
@@ -85,10 +85,10 @@ if answer == 'y':
         warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
 
     # extracting data of interest from dataset
-    data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=False)
+    data, labels = utils.get_data_and_target_with_all_coordinates(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=False)
     trainset = torch.utils.data.TensorDataset(data, labels)
 
-    test_data, test_labels = utils.get_data_and_target(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=False)
+    test_data, test_labels = utils.get_data_and_target_with_all_coordinates(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=False)
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
@@ -138,17 +138,26 @@ video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=Fals
 print('First label should be 9886.56: {}'.format(video_trainset[0][1]))
 print('Second label should be 13056.48 : {}'.format(video_trainset[1][1]))
 
+# print shape analysis of trainset data 
+print('Shape of trainset data: {}'.format(video_trainset[0][0].shape))
+print('Shape of trainset labels: {}'.format(video_trainset[0][1].shape))
+
+
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 #__________________________MODEL_____________________________
-model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
+model = allcords_overlap_vivit(image_size=IMAGE_SIZE, # according to the coordinates of interest 
             patch_size=PATCH_SIZE, 
             num_frames=NUM_FRAMES,
             in_channels=CHANNELS,   # according to the channels chosen
             dim=DIM, 
             depth=DEPTH, 
             heads=HEADS).to(device)
+
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+parameters = sum([np.prod(p.size()) for p in parameters]) / 1_000_000
+print('Trainable Parameters: %.3fM' % parameters)
 
 #_________________________TRAINING AND TESTING THE MODEL___________________________
 
@@ -210,7 +219,7 @@ if plot_opt == "y":
     plt.plot(eval_losses, label='Evaluation Loss')
     plt.legend()
     # save figure in a document with the name of the model and the date
-    plt.savefig('./figures//LOSSES_{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(model.__class__.__name__,
+    plt.savefig('./figures//LOSSES_{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format('allcords_overlap_vivit',
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             DEPTH,
@@ -256,15 +265,19 @@ print(f'NMSE: {nmse:.4f}')
 ans = input('Do you want to save results and characteristics of the model? (y/n)')
 if ans=='y':
     # write evaluation results to file
-    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format(model.__class__.__name__,
+    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format('allcords_overlap_vivit',
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             DEPTH,
                                             HEADS,
                                             date_string), 'w') as f:
+        
+        f.write('TRAINING DATASET: \n')
+        f.write(f'Number of samples: {len(video_trainset)} \n')
                 
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
+        f.write('Trainable parameters: %.3fM \n' % parameters)
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')

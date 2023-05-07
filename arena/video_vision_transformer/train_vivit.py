@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
 import utils
-from my_models import ViViT
+from my_models import ViViT as vanilla_vivit
 
 from datetime import datetime
 import warnings
@@ -155,7 +155,7 @@ print('First label should be 9886.56: {}'.format(video_trainset[0][1]))
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 #__________________________MODEL_____________________________
-model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
+model = vanilla_vivit(image_size=IMAGE_SIZE, # according to the coordinates of interest 
             patch_size=PATCH_SIZE, 
             num_frames=NUM_FRAMES,
             in_channels=CHANNELS,   # according to the channels chosen
@@ -275,7 +275,9 @@ if ans=='y':
                                             DEPTH,
                                             HEADS,
                                             date_string), 'w') as f:
-                
+        f.write('TRAINING DATASET: \n')
+        f.write(f'Number of samples: {len(video_trainset)} \n')
+
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
 
