@@ -3,7 +3,7 @@
 # Define the remote server login credentials and destination folder
 remote_server="icordova@login3.ccc.uam.es"
 remote_folder="/home/icordova/tfm/figures"
-local_directory="/Users/codefrom0/desktop/masters_thesis/arena/send_to_server/figures"
+local_directory="/Users/codefrom0/desktop/masters_thesis/arena/vision_transformer/figures"
 
 # Check if a file name is specified as a command-line argument
 if [ $# -eq 0 ]; then

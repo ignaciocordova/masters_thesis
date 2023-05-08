@@ -3,6 +3,12 @@ Wind Power Prediction using Video Vision Transformers for spatial and temporal i
 
 TO DO LIST 
 
+COMPROBAR MAE DE TARGET VS TARGET DESPLAZADA 
+PROBAR DE STANDARSCALE Despues de meter el canal de target 
+Comparar errores con test de wilcoxson
+Add normalization info to report 
+CROSS VALIDATION 
+
 AÑADIR A TEST LAS ULTIMAS 8 HORAS DEL AÑO ANTERIOR (en video)
 PROBAR TODAS LAS COORDENADAS  hecho! 
 

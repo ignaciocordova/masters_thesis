@@ -32,10 +32,10 @@ LEARNING_RATE = 0.0001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
-CHANNELS = 8
+CHANNELS = 8+1  # 8 channels + 1 previous label channel
 DIM = 64
-DEPTH = 1       # number of transformer blocks
-HEADS = 1
+DEPTH = 2       # number of transformer blocks
+HEADS = 2
 MLP_DIM = 64    
 
 
@@ -88,10 +88,12 @@ if answer == 'y':
         warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
 
 
-    data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=True)
+    data, labels = utils.get_data_and_target_with_previous_label_channel(meta_data, meta_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
     trainset = torch.utils.data.TensorDataset(data, labels)
 
-    test_data, test_labels = utils.get_data_and_target(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=True)
+    test_data, test_labels = utils.get_data_and_target_with_previous_label_channel(df_2018, target_2018, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    # first image in test set has label channel of last in train set
+    test_data[0, -1, :, :] = trainset[-1][1]
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
@@ -111,6 +113,16 @@ testloader = DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
+# check that the data has been correctly created 
+print('First label should be 4126/17500 = 0.2356', trainset[0][1])
+print('Second label should be 5688/17500 = 0.3253', trainset[1][1])
+
+# print second image in trainset 
+print('Last channel of second image:',trainset[1][0][-1, :, :])
+
+print('Last channel of third image', trainset[2][0][-1, :, :])
 
 #__________________________MODEL_____________________________
 model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
@@ -185,13 +197,12 @@ if plot == "y":
     plt.plot(eval_losses, label='Evaluation Loss')
     plt.legend()
     # save figure in a document with the name of the model and the date
-    plt.savefig('./figures//LOSSES_{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(model.__class__.__name__,
+    plt.savefig('./figures//LOSSES_{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format('past_informed_vit',
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             DEPTH,
                                             HEADS,
                                             date_string))
-    
 #_________________________EVALUATION OF THE MODEL___________________________
 
 eval = input("Do you want to evaluate the model? (y/n)")
@@ -232,7 +243,7 @@ print(f'NMSE: {nmse:.4f}')
 ans = input('Do you want to save results and characteristics of the model? (y/n)')
 if ans=='y':
     # write evaluation results to file
-    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format(model.__class__.__name__,
+    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format('past_informed_vit',
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             DEPTH,
@@ -244,7 +255,7 @@ if ans=='y':
                 
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
-        f.write(f'Trainable parameters:{parameters}')
+        f.write('Trainable parameters:' ,parameters)
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
