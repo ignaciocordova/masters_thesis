@@ -7,12 +7,10 @@ from einops.layers.torch import Rearrange
   
 
 # helpers
-
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
 # classes
-
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
         super().__init__()

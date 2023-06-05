@@ -35,7 +35,7 @@ LEARNING_RATE = 0.0001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
-CHANNELS = 8
+CHANNELS = 8+1 # 8 channels + 1 previous label channel
 DIM = 64
 DEPTH = 2       # number of transformer blocks
 HEADS = 2
@@ -84,25 +84,26 @@ if answer == 'y':
     if meta_data.shape[0] != meta_target.shape[0]:
         warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
 
-    # extracting data of interest from dataset
-    data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=False)
+    data, labels = utils.get_data_and_target_with_previous_label_channel(meta_data, meta_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
     trainset = torch.utils.data.TensorDataset(data, labels)
 
-    test_data, test_labels = utils.get_data_and_target(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=False)
+    test_data, test_labels = utils.get_data_and_target_with_previous_label_channel(df_2018, target_2018, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    # first image in test set has label channel of last in train set
+    test_data[0, -1, :, :] = trainset[-1][1]
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./processed_data'):
-        os.makedirs('./processed_data')
+    if not os.path.exists('./past_informed_images'):
+        os.makedirs('./past_informed_images')
     
     # save in disk
-    torch.save(trainset, './processed_data/trainset.pt')
-    torch.save(testset, './processed_data/testset.pt')
+    torch.save(trainset, './past_informed_images/trainset.pt')
+    torch.save(testset, './past_informed_images/testset.pt')
 
 else:
     # load the train and test sets from disk
-    trainset = torch.load('./processed_data/trainset.pt')
-    testset = torch.load('./processed_data/testset.pt')
+    trainset = torch.load('./past_informed_images/trainset.pt')
+    testset = torch.load('./past_informed_images/testset.pt')
 
 print('Size of images trainset: {}'.format(len(trainset)))
 print('Size of images testset: {}'.format(len(testset)))
@@ -120,23 +121,20 @@ if answer == 'y':
     video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./overlap_processed_data'):
-        os.makedirs('./overlap_processed_data')
+    if not os.path.exists('./overlap_past_informed_videos'):
+        os.makedirs('./overlap_past_informed_videos')
 
     # save in disk
-    torch.save(video_trainset, './overlap_processed_data/video_trainset.pt')
-    torch.save(video_testset, './overlap_processed_data/video_testset.pt')
+    torch.save(video_trainset, './overlap_past_informed_videos/video_trainset.pt')
+    torch.save(video_testset, './overlap_past_informed_videos/video_testset.pt')
 
 else:
     # load the train and test sets from disk
-    video_trainset = torch.load('./overlap_processed_data/video_trainset.pt')
-    video_testset = torch.load('./overlap_processed_data/video_testset.pt')
+    video_trainset = torch.load('./overlap_past_informed_videos/video_trainset.pt')
+    video_testset = torch.load('./overlap_past_informed_videos/video_testset.pt')
 
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
-
-print('First label should be 9886.56: {}'.format(video_trainset[0][1]))
-print('Second label should be 13056.48 : {}'.format(video_trainset[1][1]))
 
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -149,6 +147,10 @@ model = overlap_vivit(image_size=IMAGE_SIZE, # according to the coordinates of i
             dim=DIM, 
             depth=DEPTH, 
             heads=HEADS).to(device)
+
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+parameters = sum([np.prod(p.size()) for p in parameters]) 
+print('Trainable Parameters:', parameters)
 
 #_________________________TRAINING AND TESTING THE MODEL___________________________
 
@@ -182,7 +184,7 @@ for epoch in range(EPOCHS):
             print('Loss is nan. Stopping training.')
             break
 
-    train_loss /= (len(video_trainloader)*INSTALLED_POWER)
+    train_loss /= (len(video_trainloader))
     train_losses.append(train_loss)         
 
     # Evaluation
@@ -192,7 +194,7 @@ for epoch in range(EPOCHS):
         for inputs, labels in video_testloader:
             inputs, labels = inputs.to(device), labels.float().to(device)
             output = model(inputs)
-            eval_loss += criterion(output, labels).item()/INSTALLED_POWER
+            eval_loss += criterion(output, labels).item()
 
     eval_loss /= n_batches
     eval_losses.append(eval_loss)
@@ -239,10 +241,10 @@ with torch.no_grad():
         output = model(data)
 
         loss = criterion(output, target.float())
-        total_loss += loss.item()/INSTALLED_POWER
+        total_loss += loss.item()
 
         loss2 = criterion2(output, target.float())
-        total_loss2 += loss2.item()/(INSTALLED_POWER**2)
+        total_loss2 += loss2.item()
 
 
 # normalized mean absolute error
@@ -264,10 +266,11 @@ if ans=='y':
                                             date_string), 'w') as f:
                 
         f.write('TRAINING DATASET: \n')
-        f.write(f'Number of samples: {len(video_trainset)} \n')
-
+        f.write(f'Number of samples: {len(trainset)} \n')
+                
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
+        f.write(f'Trainable parameters:{parameters}')
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
@@ -276,5 +279,12 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
+
+
+# option to save the model 
+ans = input('Do you want to save the model? (y/n)')
+if ans=='y':
+    torch.save(model, './models/past_label_informed_vivit_2enc2heads.pt')
+
 
 

@@ -3,7 +3,7 @@ Wind Power Prediction using Video Vision Transformers for spatial and temporal i
 
 TO DO LIST 
 
-COMPROBAR MAE DE TARGET VS TARGET DESPLAZADA 
+COMPROBAR MAE DE TARGET VS TARGET DESPLAZADA hecho! 
 PROBAR DE STANDARSCALE Despues de meter el canal de target 
 Comparar errores con test de wilcoxson
 Add normalization info to report 
@@ -28,3 +28,11 @@ PREGUNTAS
 - Fecha de presentación? Si no estoy matriculado lo puedo presentar en Septiembre?? 
 - Memoria + paper? O solo uno de los dos? 
 - Doctorado industrial? 
+
+
+
+RESULTADOS ACTUALES 
+
+Dumb Baseline: MAE 0.041
+ViViT 2 encoders 2 heads: MAE 0.0706
+Past label informed ViViT 2 encoders 2 heads: MAE 0.0403  GREAT!!!

@@ -92,17 +92,17 @@ if answer == 'y':
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./processed_data'):
-        os.makedirs('./processed_data')
+    if not os.path.exists('./all_cords_processed_data'):
+        os.makedirs('./all_cords_processed_data')
     
     # save in disk
-    torch.save(trainset, './processed_data/trainset.pt')
-    torch.save(testset, './processed_data/testset.pt')
+    torch.save(trainset, './all_cords_processed_data/trainset.pt')
+    torch.save(testset, './all_cords_processed_data/testset.pt')
 
 else:
     # load the train and test sets from disk
-    trainset = torch.load('./processed_data/trainset.pt')
-    testset = torch.load('./processed_data/testset.pt')
+    trainset = torch.load('./all_cords_processed_data/trainset.pt')
+    testset = torch.load('./all_cords_processed_data/testset.pt')
 
 print('Size of images trainset: {}'.format(len(trainset)))
 print('Size of images testset: {}'.format(len(testset)))
@@ -120,17 +120,17 @@ if answer == 'y':
     video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./overlap_processed_data'):
-        os.makedirs('./overlap_processed_data')
+    if not os.path.exists('./overlap_all_cords_processed_data'):
+        os.makedirs('./overlap_all_cords_processed_data')
 
     # save in disk
-    torch.save(video_trainset, './overlap_processed_data/video_trainset.pt')
-    torch.save(video_testset, './overlap_processed_data/video_testset.pt')
+    torch.save(video_trainset, './overlap_all_cords_processed_data/video_trainset.pt')
+    torch.save(video_testset, './overlap_all_cords_processed_data/video_testset.pt')
 
 else:
     # load the train and test sets from disk
-    video_trainset = torch.load('./overlap_processed_data/video_trainset.pt')
-    video_testset = torch.load('./overlap_processed_data/video_testset.pt')
+    video_trainset = torch.load('./overlap_all_cords_processed_data/video_trainset.pt')
+    video_testset = torch.load('./overlap_all_cords_processed_data/video_testset.pt')
 
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
@@ -286,5 +286,15 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
+
+
+# option to save the model 
+ans = input('Do you want to save the model? (y/n)')
+if ans=='y':
+    torch.save(model, './models/all_cords{}_img{}_ptch{}_dpth{}_hds{}.pt'.format(model.__class__.__name__,
+                                            IMAGE_SIZE,
+                                            PATCH_SIZE,
+                                            DEPTH,
+                                            HEADS))
 
 

@@ -114,8 +114,8 @@ def create_images_with_previous_label_channel(df, target_df, channels, image_siz
     previous_label[0] =  np.mean(target) # uninformed first label !  
 
     for idx,label in enumerate(previous_label):
-        # images[idx, -1, :, :] = np.full((image_size, image_size), label)
-        images[idx, -1, :, :] = np.full((image_size, image_size), 0.0) # non-informative
+        images[idx, -1, :, :] = np.full((image_size, image_size), label)
+        # images[idx, -1, :, :] = np.full((image_size, image_size), 0.0) # non-informative
 
     return torch.from_numpy(images)
 

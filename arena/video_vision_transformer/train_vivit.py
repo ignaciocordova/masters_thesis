@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
 import utils
-from my_models import ViViT as vanilla_vivit
+from my_models import ViViT as overlap_vivit
 
 from datetime import datetime
 import warnings
@@ -27,10 +27,11 @@ MAX_LON = -7.375
 MIN_LON = -8.375
 
 NUM_FRAMES = 8 # number of frames in the video
+OVERLAP_SIZE = 7 #number of overlaping frames
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 EPOCHS = 150
-LEARNING_RATE = 0.0003
+LEARNING_RATE = 0.0001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
@@ -59,20 +60,16 @@ if answer == 'y':
     #_________________DATA LOADED INTO MEMORY_____________________________
 
     # TAINING DATA
-    df_2016 = pd.read_csv('data_stv_2016.csv')
-    df_2017 = pd.read_csv('data_stv_2017.csv')
-
-    meta_data = pd.concat([df_2016, df_2017], axis=0)
+    meta_data = pd.concat([pd.read_csv('data_stv_2016.csv'),
+                            pd.read_csv('data_stv_2017.csv')], axis=0)
 
     # feature scale the data ignoring the first column
     scaler = StandardScaler()
     meta_data.iloc[:, 1:] = scaler.fit_transform(meta_data.iloc[:, 1:])
 
     # TRAINING TARGET
-    target_2016 = pd.read_csv('target_stv_2016.csv', header=None)
-    target_2017 = pd.read_csv('target_stv_2017.csv', header=None)
-
-    meta_target = pd.concat([target_2016, target_2017], axis=0)
+    meta_target = pd.concat([pd.read_csv('target_stv_2016.csv', header=None),
+                              pd.read_csv('target_stv_2017.csv', header=None)], axis=0)
 
     # TEST DATA
     df_2018 = pd.read_csv('data_stv_2018.csv')
@@ -87,11 +84,11 @@ if answer == 'y':
     if meta_data.shape[0] != meta_target.shape[0]:
         warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
 
-
-    data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=False)
+    # extracting data of interest from dataset
+    data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=True)
     trainset = torch.utils.data.TensorDataset(data, labels)
 
-    test_data, test_labels = utils.get_data_and_target(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=False)
+    test_data, test_labels = utils.get_data_and_target(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=True)
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
@@ -106,56 +103,46 @@ else:
     # load the train and test sets from disk
     trainset = torch.load('./processed_data/trainset.pt')
     testset = torch.load('./processed_data/testset.pt')
-    
-trainloader = DataLoader(trainset, batch_size=NUM_FRAMES, shuffle=False)
-testloader = DataLoader(testset, batch_size=NUM_FRAMES, shuffle=False)
 
-# NON OVERLAPPING VIDEO DATA
+print('Size of images trainset: {}'.format(len(trainset)))
+print('Size of images testset: {}'.format(len(testset)))
+print('')
+
+trainloader = DataLoader(trainset, batch_size=1, shuffle=False)
+testloader = DataLoader(testset, batch_size=1, shuffle=False)
+
+# OVERLAPPING VIDEO DATA
 # ask the user if he wants to create the train and test sets or load them from disk
-answer = input('Do you want to create the VIDEO train and test sets? (y/n)')
+answer = input('Do you want to create the overlap VIDEO train and test sets? (y/n)')
 if answer == 'y':
-    # iterate over the trainloader and create the video trainset
-    video_trainset = []
-    for i, (inputs, labels) in enumerate(trainloader):
-        video_label = labels[-1]
-
-        # append the video and the label to the video trainset
-        video_trainset.append((inputs, video_label))
-
-
-    # iterate over the testloader and create the video testset
-    video_testset = []
-    for i, (inputs, labels) in enumerate(testloader):
-        # asign the last label of the batch to the whole video
-        video_label = labels[-1]
-        # append the video and the label to the video testset
-        video_testset.append((inputs, video_label))
     
+    video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
+    video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
+
     # create the directory if it doesn't exist
-    if not os.path.exists('./processed_data'):
-        os.makedirs('./processed_data')
+    if not os.path.exists('./overlap_processed_data'):
+        os.makedirs('./overlap_processed_data')
 
     # save in disk
-    torch.save(video_trainset, './processed_data/video_trainset.pt')
-    torch.save(video_testset, './processed_data/video_testset.pt')
+    torch.save(video_trainset, './overlap_processed_data/video_trainset.pt')
+    torch.save(video_testset, './overlap_processed_data/video_testset.pt')
 
 else:
     # load the train and test sets from disk
-    video_trainset = torch.load('./processed_data/video_trainset.pt')
-    video_testset = torch.load('./processed_data/video_testset.pt')
+    video_trainset = torch.load('./overlap_processed_data/video_trainset.pt')
+    video_testset = torch.load('./overlap_processed_data/video_testset.pt')
 
-video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=True)
+video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
 
-# print a complete analysis of the dimension of data and labels of video_trainset and video_testset
 print('First label should be 9886.56: {}'.format(video_trainset[0][1]))
-
+print('Second label should be 13056.48 : {}'.format(video_trainset[1][1]))
 
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 #__________________________MODEL_____________________________
-model = vanilla_vivit(image_size=IMAGE_SIZE, # according to the coordinates of interest 
+model = overlap_vivit(image_size=IMAGE_SIZE, # according to the coordinates of interest 
             patch_size=PATCH_SIZE, 
             num_frames=NUM_FRAMES,
             in_channels=CHANNELS,   # according to the channels chosen
@@ -180,7 +167,7 @@ for epoch in range(EPOCHS):
     model.train()
     train_loss = 0
     for i, (inputs, labels) in enumerate(video_trainloader):
-        inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
+        inputs, labels = inputs.to(device), labels.float().to(device)
 
         optimizer.zero_grad()
         
@@ -195,7 +182,7 @@ for epoch in range(EPOCHS):
             print('Loss is nan. Stopping training.')
             break
 
-    train_loss /= (len(video_trainloader)*INSTALLED_POWER)
+    train_loss /= (len(video_trainloader))
     train_losses.append(train_loss)         
 
     # Evaluation
@@ -203,9 +190,9 @@ for epoch in range(EPOCHS):
     eval_loss = 0
     with torch.no_grad():
         for inputs, labels in video_testloader:
-            inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
+            inputs, labels = inputs.to(device), labels.float().to(device)
             output = model(inputs)
-            eval_loss += criterion(output, labels).item()/INSTALLED_POWER
+            eval_loss += criterion(output, labels).item()
 
     eval_loss /= n_batches
     eval_losses.append(eval_loss)
@@ -217,8 +204,8 @@ date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
 print('Finished Training')
 
 # plot losses
-plot = input("Do you want to plot the losses? (y/n)")
-if plot == "y":
+plot_opt = input("Do you want to plot the losses? (y/n)")
+if plot_opt == "y":
     plt.plot(train_losses, label='Training Loss')
     plt.plot(eval_losses, label='Evaluation Loss')
     plt.legend()
@@ -251,11 +238,11 @@ with torch.no_grad():
         
         output = model(data)
 
-        loss = criterion(output, target.unsqueeze(1).float())
-        total_loss += loss.item()/INSTALLED_POWER
+        loss = criterion(output, target.float())
+        total_loss += loss.item()
 
-        loss2 = criterion2(output, target.unsqueeze(1).float())
-        total_loss2 += loss2.item()/(INSTALLED_POWER**2)
+        loss2 = criterion2(output, target.float())
+        total_loss2 += loss2.item()
 
 
 # normalized mean absolute error
@@ -275,6 +262,7 @@ if ans=='y':
                                             DEPTH,
                                             HEADS,
                                             date_string), 'w') as f:
+                
         f.write('TRAINING DATASET: \n')
         f.write(f'Number of samples: {len(video_trainset)} \n')
 
@@ -288,5 +276,12 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
+
+
+# option to save the model 
+ans = input('Do you want to save the model? (y/n)')
+if ans=='y':
+    torch.save(model, './models/overlap_vivit2enc2heads')
+
 
 
