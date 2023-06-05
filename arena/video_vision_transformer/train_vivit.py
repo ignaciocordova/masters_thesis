@@ -26,8 +26,8 @@ MIN_LAT = 42.875
 MAX_LON = -7.375
 MIN_LON = -8.375
 
-NUM_FRAMES = 8 # number of frames in the video
-OVERLAP_SIZE = 7 #number of overlaping frames
+NUM_FRAMES = 4 # number of frames in the video
+OVERLAP_SIZE = 3 #number of overlaping frames
 
 BATCH_SIZE = 64
 EPOCHS = 150
@@ -92,17 +92,17 @@ if answer == 'y':
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./processed_data'):
-        os.makedirs('./processed_data')
+    if not os.path.exists('./images'):
+        os.makedirs('./images')
     
     # save in disk
-    torch.save(trainset, './processed_data/trainset.pt')
-    torch.save(testset, './processed_data/testset.pt')
+    torch.save(trainset, './images/trainset.pt')
+    torch.save(testset, './images/testset.pt')
 
 else:
     # load the train and test sets from disk
-    trainset = torch.load('./processed_data/trainset.pt')
-    testset = torch.load('./processed_data/testset.pt')
+    trainset = torch.load('./images/trainset.pt')
+    testset = torch.load('./images/testset.pt')
 
 print('Size of images trainset: {}'.format(len(trainset)))
 print('Size of images testset: {}'.format(len(testset)))
@@ -120,23 +120,26 @@ if answer == 'y':
     video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./overlap_processed_data'):
-        os.makedirs('./overlap_processed_data')
+    if not os.path.exists('./videos'):
+        os.makedirs('./videos')
 
     # save in disk
-    torch.save(video_trainset, './overlap_processed_data/video_trainset.pt')
-    torch.save(video_testset, './overlap_processed_data/video_testset.pt')
+    torch.save(video_trainset, './videos/video_trainset.pt')
+    torch.save(video_testset, './videos/video_testset.pt')
 
 else:
     # load the train and test sets from disk
-    video_trainset = torch.load('./overlap_processed_data/video_trainset.pt')
-    video_testset = torch.load('./overlap_processed_data/video_testset.pt')
+    video_trainset = torch.load('./videos/video_trainset.pt')
+    video_testset = torch.load('./videos/video_testset.pt')
 
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
 
 print('First label should be 9886.56: {}'.format(video_trainset[0][1]))
 print('Second label should be 13056.48 : {}'.format(video_trainset[1][1]))
+
+# last channel of first video in trainset
+print()
 
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -281,7 +284,7 @@ if ans=='y':
 # option to save the model 
 ans = input('Do you want to save the model? (y/n)')
 if ans=='y':
-    torch.save(model, './models/overlap_vivit2enc2heads')
+    torch.save(model, './models/vivit2enc2heads.pt')
 
 
 

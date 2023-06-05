@@ -26,8 +26,8 @@ MIN_LAT = 42.875
 MAX_LON = -7.375
 MIN_LON = -8.375
 
-NUM_FRAMES = 8 # number of frames in the video
-OVERLAP_SIZE = 7 #number of overlaping frames
+NUM_FRAMES = 4 # look 4 hours to the past
+OVERLAP_SIZE = 3 #number of overlaping frames
 
 BATCH_SIZE = 64
 EPOCHS = 150
@@ -118,22 +118,24 @@ answer = input('Do you want to create the overlap VIDEO train and test sets? (y/
 if answer == 'y':
     
     video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
+    print('Size of video trainset: {}'.format(len(video_trainset)))
     video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./overlap_past_informed_videos'):
-        os.makedirs('./overlap_past_informed_videos')
+    if not os.path.exists('./past_informed_videos'):
+        os.makedirs('./past_informed_videos')
 
     # save in disk
-    torch.save(video_trainset, './overlap_past_informed_videos/video_trainset.pt')
-    torch.save(video_testset, './overlap_past_informed_videos/video_testset.pt')
+    torch.save(video_trainset, './past_informed_videos/video_trainset.pt')
+    torch.save(video_testset, './past_informed_videos/video_testset.pt')
 
 else:
     # load the train and test sets from disk
-    video_trainset = torch.load('./overlap_past_informed_videos/video_trainset.pt')
-    video_testset = torch.load('./overlap_past_informed_videos/video_testset.pt')
+    video_trainset = torch.load('./past_informed_videos/video_trainset.pt')
+    video_testset = torch.load('./past_informed_videos/video_testset.pt')
 
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
+print('Len of video_trainloader:', len(video_trainloader))
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
 
 #_________________________DEVICE_____________________________
@@ -184,7 +186,7 @@ for epoch in range(EPOCHS):
             print('Loss is nan. Stopping training.')
             break
 
-    train_loss /= (len(video_trainloader))
+    train_loss /= len(video_trainloader)
     train_losses.append(train_loss)         
 
     # Evaluation
