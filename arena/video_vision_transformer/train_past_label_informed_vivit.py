@@ -61,7 +61,8 @@ if answer == 'y':
 
     # TAINING DATA
     meta_data = pd.concat([pd.read_csv('data_stv_2016.csv'),
-                            pd.read_csv('data_stv_2017.csv')], axis=0)
+                            pd.read_csv('data_stv_2017.csv')],
+                            axis=0)
 
     # feature scale the data ignoring the first column
     scaler = StandardScaler()
@@ -69,7 +70,8 @@ if answer == 'y':
 
     # TRAINING TARGET
     meta_target = pd.concat([pd.read_csv('target_stv_2016.csv', header=None),
-                              pd.read_csv('target_stv_2017.csv', header=None)], axis=0)
+                              pd.read_csv('target_stv_2017.csv', header=None)],
+                              axis=0)
 
     # TEST DATA
     df_2018 = pd.read_csv('data_stv_2018.csv')

@@ -34,8 +34,8 @@ IMAGE_SIZE = 9
 PATCH_SIZE = 3
 CHANNELS = 8
 DIM = 64
-DEPTH = 1       # number of transformer blocks
-HEADS = 1
+DEPTH = 4       # number of transformer blocks
+HEADS = 2
 MLP_DIM = 64    
 
 
@@ -95,16 +95,16 @@ if answer == 'y':
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./processed_data'):
-        os.makedirs('./processed_data')
+    if not os.path.exists('./images'):
+        os.makedirs('./images')
     
     # save in disk
-    torch.save(trainset, './processed_data/trainset.pt')
-    torch.save(testset, './processed_data/testset.pt')
+    torch.save(trainset, './images/trainset.pt')
+    torch.save(testset, './images/testset.pt')
 else:
     # read from disk
-    trainset = torch.load('./processed_data/trainset.pt')
-    testset = torch.load('./processed_data/testset.pt')
+    trainset = torch.load('./images/trainset.pt')
+    testset = torch.load('./images/testset.pt')
 
 trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=False)
 testloader = DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
@@ -253,5 +253,11 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
+
+
+# option to save the model 
+ans = input('Do you want to save the model? (y/n)')
+if ans=='y':
+    torch.save(model, './models/vit.pt')
 
 
