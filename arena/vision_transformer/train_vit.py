@@ -27,15 +27,15 @@ MAX_LON = -7.375
 MIN_LON = -8.375
 
 BATCH_SIZE = 64
-EPOCHS = 100
+EPOCHS = 150
 LEARNING_RATE = 0.0001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
 CHANNELS = 8
 DIM = 64
-DEPTH = 4       # number of transformer blocks
-HEADS = 2
+DEPTH = 8       # number of transformer blocks
+HEADS = 8
 MLP_DIM = 64    
 
 
