@@ -111,6 +111,7 @@ testloader = DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('Using device:', device)
 
 #__________________________MODEL_____________________________
 model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 

@@ -34,8 +34,8 @@ IMAGE_SIZE = 9
 PATCH_SIZE = 3
 CHANNELS = 8+1  # 8 channels + 1 previous label channel
 DIM = 64
-DEPTH = 2       # number of transformer blocks
-HEADS = 2
+DEPTH = 4       # number of transformer blocks
+HEADS = 4
 MLP_DIM = 64    
 
 
@@ -97,22 +97,23 @@ if answer == 'y':
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     # create the directory if it doesn't exist
-    if not os.path.exists('./processed_data'):
-        os.makedirs('./processed_data')
+    if not os.path.exists('./past_informed_images'):
+        os.makedirs('./past_informed_images')
     
     # save in disk
-    torch.save(trainset, './processed_data/trainset.pt')
-    torch.save(testset, './processed_data/testset.pt')
+    torch.save(trainset, './past_informed_images/trainset.pt')
+    torch.save(testset, './past_informed_images/testset.pt')
 else:
     # read from disk
-    trainset = torch.load('./processed_data/trainset.pt')
-    testset = torch.load('./processed_data/testset.pt')
+    trainset = torch.load('./past_informed_images/trainset.pt')
+    testset = torch.load('./past_informed_images/testset.pt')
 
 trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=False)
 testloader = DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('Device:', device)
 
 
 # check that the data has been correctly created 
@@ -255,7 +256,7 @@ if ans=='y':
                 
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
-        f.write('Trainable parameters:' ,parameters)
+        f.write(f'Trainable parameters:{parameters} \n ')
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
@@ -264,5 +265,11 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
+
+
+# option to save the model 
+ans = input('Do you want to save the model? (y/n)')
+if ans=='y':
+    torch.save(model, './models/past_label_informed_vit.pt')
 
 

@@ -4,7 +4,7 @@ Add normalization info to report
 CROSS VALIDATION 
 grid search para transofrmer depth & heads 
 
-AÑADIR A TEST LAS ULTIMAS 8 HORAS DEL AÑO ANTERIOR (en video)
+AÑADIR A TEST LAS ULTIMAS NUM_FRAMES HORAS DEL AÑO ANTERIOR (en video)
 Comprobar dimensiones de las predicciones
 
 - Get all datasets 
@@ -27,6 +27,15 @@ Past label informed ViViT 2 encoders 2 heads: MAE 0.0403  GREAT!!!
 
 Hechos: 
 
+Cambiar la estructura de los datasets creados:
+    Imágenes
+    Videos
+    Imágenes con power anteriores 
+    Videos con power anteriores (en cada frame)
+Crear datasets de test con la última imagen de train
+Creat datasets de video test con los útlimos NUM_FRAMES de train 
+Entrenar de forma más agresiva (haciendo "trampas") --> conseguido 0.02 NMAE !!!! 
+Guardar modelos en formato .pt para poder compararlos entre ellos. 
 Visualize data (time series and spatial) hecho! 
 Visualize predictions (time series) hecho! 
 COMPROBAR MAE DE TARGET VS TARGET DESPLAZADA hecho! 

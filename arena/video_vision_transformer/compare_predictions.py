@@ -19,9 +19,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print('Using device:', device)
 
 #load model 
-model1 = torch.load('./models/vivit2enc2heads.pt')
+model1 = torch.load('./models/vivit.pt')
 
-testset = torch.load('./processed_data/video_testset.pt')
+testset = torch.load('./videos/video_testset.pt')
 testloader = DataLoader(testset, batch_size=1, shuffle=False)
 
 with torch.no_grad():
@@ -34,7 +34,7 @@ with torch.no_grad():
         predictions1.append(output.item()*INSTALLED_POWER)
 
 #load model
-model2 = torch.load('./models/past_label_informed_vivit_2enc2heads.pt')
+model2 = torch.load('./models/past_label_informed_vivit.pt')
 
 testset = torch.load('./past_informed_videos/video_testset.pt')
 testloader = DataLoader(testset, batch_size=1, shuffle=False)

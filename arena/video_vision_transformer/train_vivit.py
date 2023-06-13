@@ -30,15 +30,15 @@ NUM_FRAMES = 4 # number of frames in the video
 OVERLAP_SIZE = 3 #number of overlaping frames
 
 BATCH_SIZE = 64
-EPOCHS = 150
+EPOCHS = 50
 LEARNING_RATE = 0.0003
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
 CHANNELS = 8
 DIM = 64
-DEPTH = 8       # number of transformer blocks
-HEADS = 8
+DEPTH = 2       # number of transformer blocks
+HEADS = 2
 
 #_________________________DATA OF INTEREST_____________________________
 coordinates_of_interest = ['prediction date']
@@ -129,6 +129,7 @@ print('')
 
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('Device:', device)
 
 #__________________________MODEL_____________________________
 model = overlap_vivit(image_size=IMAGE_SIZE, # according to the coordinates of interest 
