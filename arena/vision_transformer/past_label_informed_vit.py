@@ -154,7 +154,7 @@ for epoch in range(EPOCHS):
     # Training
     model.train()
     train_loss = 0
-    for i, (inputs, labels) in enumerate(testloader):
+    for i, (inputs, labels) in enumerate(trainloader):
         inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
 
         optimizer.zero_grad()

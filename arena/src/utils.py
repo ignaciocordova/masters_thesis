@@ -75,6 +75,8 @@ def create_images(df, channels, image_size):
 
     return torch.from_numpy(images)
 
+
+
 def create_images_with_previous_label_channel(df, target_df, channels, image_size, normalize_target=False, INSTALLED_POWER=17500):
     """
     Creates images from the data in df.

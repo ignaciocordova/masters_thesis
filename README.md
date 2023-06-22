@@ -1,20 +1,39 @@
+Objetivos: 
+
+Crear un programa de Python que entre el ViT con 2016 y lo valide con 2017. 
+Aplicar early stopping si el validaliton loss no disminuye al cabo de 10 epochs.  
+Utilizar cross validation para el número de encoders y el número de heads. 
+
+
+
+
+
+
+
+
+
+
+
+
 PROBAR DE STANDARSCALE Despues de meter el canal de target 
 Comparar errores con test de wilcoxson
 Add normalization info to report 
 CROSS VALIDATION 
 grid search para transofrmer depth & heads 
 
-AÑADIR A TEST LAS ULTIMAS NUM_FRAMES HORAS DEL AÑO ANTERIOR (en video)
-Comprobar dimensiones de las predicciones
+AÑADIR A TEST LAS ULTIMAS NUM_FRAMES HORAS DEL AÑO ANTERIOR (en video) hecho! 
+Comprobar dimensiones de las predicciones hecho! 
 
 - Get all datasets 
 - Add physics informed information (add v^3 channels)
-
 - Analyze outliers and/or points with high MAE or MSE 
 
 Physics informed machine learning models
 
-RESULTADOS ACTUALES 
+RESULTADOS ACTUALES
+
+Experimentos con validacion para 15 de Julio 
+Tabla con resultados para cada modelo, número de parámetros...
 
 ### Dumb Baseline: MAE 0.0410 #### 
 

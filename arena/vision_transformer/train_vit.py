@@ -27,8 +27,8 @@ MAX_LON = -7.375
 MIN_LON = -8.375
 
 BATCH_SIZE = 64
-EPOCHS = 150
-LEARNING_RATE = 0.0001
+EPOCHS = 50
+LEARNING_RATE = 0.001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
@@ -142,7 +142,7 @@ for epoch in range(EPOCHS):
     # Training
     model.train()
     train_loss = 0
-    for i, (inputs, labels) in enumerate(testloader):
+    for i, (inputs, labels) in enumerate(trainloader):
         inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
 
         optimizer.zero_grad()
@@ -158,10 +158,10 @@ for epoch in range(EPOCHS):
             print('Loss is nan. Stopping training.')
             break
 
-    train_loss /= (len(testloader))
+    train_loss /= (len(trainloader))
     train_losses.append(train_loss)         
 
-    # Evaluation
+    # Evaluation in every epoch
     model.eval()
     eval_loss = 0
     with torch.no_grad():
