@@ -1,0 +1,117 @@
+TRAINING DATASET: 
+Number of samples: 17544 
+TRAINING PARAMETERS: 
+Batch size: 64 Learning rate: 0.0003 Epochs: 100 
+Trainable parameters:91857HYPERPARAMETERS: 
+Lat and Lon 43.875,42.875; -7.375,-8.375 
+Image size: 9 
+ Patch size: 3 
+ Channels: 8 
+ Dim: 64 
+ Depth: 4 
+ Heads: 1 
+
+EVALUATION RESULTS: 
+NMAE: 0.0662 
+NMSE: 0.0107 
+
+
+CrossValidation depth and heads 
+
+---------------------
+Training with depth 1 and heads 1
+---------------------
+Early stopping in epoch 44
+Train and val losses for depth 1 and heads 1:
+Train loss: 0.0531
+Val loss: 0.0660
+---------------------
+---------------------
+Training with depth 1 and heads 2
+---------------------
+Early stopping in epoch 44
+Train and val losses for depth 1 and heads 2:
+Train loss: 0.0520
+Val loss: 0.0664
+---------------------
+---------------------
+Training with depth 1 and heads 4
+---------------------
+Early stopping in epoch 52
+Train and val losses for depth 1 and heads 4:
+Train loss: 0.0461
+Val loss: 0.0660
+---------------------
+---------------------
+Training with depth 1 and heads 8
+---------------------
+Early stopping in epoch 32
+Train and val losses for depth 1 and heads 8:
+Train loss: 0.0460
+Val loss: 0.0649
+---------------------
+---------------------
+Training with depth 2 and heads 1
+---------------------
+Early stopping in epoch 47
+Train and val losses for depth 2 and heads 1:
+Train loss: 0.0445
+Val loss: 0.0668
+---------------------
+---------------------
+Training with depth 2 and heads 2
+---------------------
+Early stopping in epoch 35
+Train and val losses for depth 2 and heads 2:
+Train loss: 0.0439
+Val loss: 0.0655
+---------------------
+---------------------
+Training with depth 2 and heads 4
+---------------------
+Early stopping in epoch 20
+Train and val losses for depth 2 and heads 4:
+Train loss: 0.0457
+Val loss: 0.0644
+---------------------
+---------------------
+Training with depth 2 and heads 8
+---------------------
+Early stopping in epoch 25
+Train and val losses for depth 2 and heads 8:
+Train loss: 0.0399
+Val loss: 0.0657
+---------------------
+---------------------
+Training with depth 4 and heads 1
+---------------------
+Early stopping in epoch 25
+Train and val losses for depth 4 and heads 1:
+Train loss: 0.0454
+Val loss: 0.0632
+---------------------
+---------------------
+Training with depth 4 and heads 2
+---------------------
+Early stopping in epoch 29
+Train and val losses for depth 4 and heads 2:
+Train loss: 0.0400
+Val loss: 0.0640
+---------------------
+---------------------
+Training with depth 4 and heads 4
+---------------------
+Early stopping in epoch 20
+Train and val losses for depth 4 and heads 4:
+Train loss: 0.0422
+Val loss: 0.0667
+---------------------
+---------------------
+Training with depth 4 and heads 8
+---------------------
+Early stopping in epoch 21
+Train and val losses for depth 4 and heads 8:
+Train loss: 0.0383
+Val loss: 0.0636
+---------------------
+Best depth and heads: 4, 1
