@@ -246,7 +246,7 @@ if plot == "y":
     plt.plot(best_val_losses, label='Validation Loss')
     plt.legend()
     # save figure in a document with the name of the model and the date
-    plt.savefig('./figures/LOSSES_vit_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(IMAGE_SIZE,
+    plt.savefig('./figures/LOSSES_past_label_informed_vit_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(IMAGE_SIZE,
                                                                                 PATCH_SIZE,
                                                                                 DEPTH,
                                                                                 HEADS,

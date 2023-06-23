@@ -40,6 +40,8 @@ DIM = 64
 DEPTH = 2       # number of transformer blocks
 HEADS = 2
 
+date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
+
 #_________________________DATA OF INTEREST_____________________________
 coordinates_of_interest = ['prediction date']
 
@@ -59,47 +61,53 @@ if answer == 'y':
 
     #_________________DATA LOADED INTO MEMORY_____________________________
 
-    # TAINING DATA
-    meta_data = pd.concat([pd.read_csv('data_stv_2016.csv'),
-                            pd.read_csv('data_stv_2017.csv')], axis=0)
-
+    # TAINING DATA AND TARGET
+    train_data = pd.read_csv('data_stv_2016.csv')
+    train_target = pd.read_csv('target_stv_2016.csv', header=None)
     # feature scale the data ignoring the first column
     scaler = StandardScaler()
-    meta_data.iloc[:, 1:] = scaler.fit_transform(meta_data.iloc[:, 1:])
+    train_data.iloc[:, 1:] = scaler.fit_transform(train_data.iloc[:, 1:])
 
-    # TRAINING TARGET
-    meta_target = pd.concat([pd.read_csv('target_stv_2016.csv', header=None),
-                              pd.read_csv('target_stv_2017.csv', header=None)], axis=0)
 
-    # TEST DATA
-    df_2018 = pd.read_csv('data_stv_2018.csv')
-
+    # VALIDATION DATA AND TARGET
+    val_data = pd.read_csv('data_stv_2017.csv')
+    val_target = pd.read_csv('target_stv_2017.csv', header=None)
     # feature scale the data ignoring the first column
-    df_2018.iloc[:, 1:] = scaler.transform(df_2018.iloc[:, 1:])
+    val_data.iloc[:, 1:] = scaler.transform(val_data.iloc[:, 1:])
 
-    # TEST TARGET
-    target_2018 = pd.read_csv('target_stv_2018.csv', header=None)
+    # TEST DATA AND TARGET
+    test_data = pd.read_csv('data_stv_2018.csv')
+    test_target = pd.read_csv('target_stv_2018.csv', header=None)
+    # feature scale the data ignoring the first column
+    test_data.iloc[:, 1:] = scaler.transform(test_data.iloc[:, 1:])
 
     # warning if meta_data and meta_target have different number of rows
-    if meta_data.shape[0] != meta_target.shape[0]:
-        warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(meta_data.shape[0], meta_target.shape[0]), RuntimeWarning)
+    if train_data.shape[0] != train_target.shape[0]:
+        warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(train_data.shape[0], train_target.shape[0]), RuntimeWarning)
 
     # extracting data of interest from dataset
-    data, labels = utils.get_data_and_target(meta_data, meta_target, coordinates_of_interest, channels, normalize_target=True)
-    trainset = torch.utils.data.TensorDataset(data, labels)
+    train_images, train_labels = utils.get_data_and_target(train_data, train_target, coordinates_of_interest, channels, normalize_target=True)
+    trainset = torch.utils.data.TensorDataset(train_images, train_labels)
 
-    test_data, test_labels = utils.get_data_and_target(df_2018, target_2018, coordinates_of_interest, channels, normalize_target=True)
-    
+    val_images, val_labels = utils.get_data_and_target(val_data, val_target, coordinates_of_interest, channels, normalize_target=True)
+    # add last NUM_FRAMES frames of the trainset to the beggining of the valsset
+    val_images = torch.cat((train_images[-NUM_FRAMES+1:], val_images), dim=0)
+    val_labels = torch.cat((train_labels[-NUM_FRAMES+1:], val_labels), dim=0)
+    valset = torch.utils.data.TensorDataset(val_images, val_labels)
+
+
+    test_images, test_labels = utils.get_data_and_target(test_data, test_target, coordinates_of_interest, channels, normalize_target=True)
     # add last NUM_FRAMES frames of the trainset to the beggining of the testset
-    test_data = torch.cat((data[-NUM_FRAMES+1:], test_data), dim=0)
-    test_labels = torch.cat((labels[-NUM_FRAMES+1:], test_labels), dim=0)
-    
+    test_data = torch.cat((val_images[-NUM_FRAMES+1:], test_images), dim=0)
+    test_labels = torch.cat((val_labels[-NUM_FRAMES+1:], test_labels), dim=0) 
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
     trainloader = DataLoader(trainset, batch_size=1, shuffle=False)
+    valloader = DataLoader(valset, batch_size=1, shuffle=False)
     testloader = DataLoader(testset, batch_size=1, shuffle=False)
 
     video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
+    video_valset = utils.create_video_dataset(valloader, NUM_FRAMES, OVERLAP_SIZE)
     video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
     # create the directory if it doesn't exist
@@ -108,28 +116,156 @@ if answer == 'y':
 
     # save in disk
     torch.save(video_trainset, './videos/video_trainset.pt')
+    torch.save(video_valset, './videos/video_valset.pt')
     torch.save(video_testset, './videos/video_testset.pt')
 
 else:
     # load the train and test sets from disk
     video_trainset = torch.load('./videos/video_trainset.pt')
+    video_valset = torch.load('./videos/video_valset.pt')
     video_testset = torch.load('./videos/video_testset.pt')
 
 
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
+video_valloader = DataLoader(video_valset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
-
-print('First label should be 0.437: {}'.format(video_trainset[0][1]))
-print('Second label should be 0.556 : {}'.format(video_trainset[1][1]))
-print('')
-print('Size of video trainset: {}'.format(len(video_trainset)))
-print('Size of video testset: {}'.format(len(video_testset)))
-print('')
 
 
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Device:', device)
+print('---------------------')
+print('Using device:', device)
+print('---------------------')
+
+#_________________________TRAIN AND VALIDATION___________________________
+
+criterion = nn.L1Loss()
+criterion2 = nn.MSELoss()
+
+param_grid = {'depth': [1, 2, 4, 8, 12],
+              'heads': [1, 2, 4, 8]}
+
+best_val_loss = 1000
+
+for depth in param_grid['depth']:
+    for heads in param_grid['heads']:
+        print('---------------------')
+        print('Training with depth {} and heads {}'.format(depth, heads))
+        print('---------------------')
+        model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
+            patch_size=PATCH_SIZE, 
+            num_frames=NUM_FRAMES,
+            in_channels=CHANNELS,   # according to the channels chosen
+            dim=DIM, 
+            depth=depth, 
+            heads=heads).to(device)
+    
+        optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+        # early stopping
+        no_improvement = 0
+        patience = 10 
+
+        train_losses = []
+        val_losses = []
+
+        for epoch in range(EPOCHS):
+            # Training
+            model.train()
+            train_loss = 0
+            for inputs, labels in video_trainloader:
+                inputs, labels = inputs.to(device), labels.float().to(device)
+
+                optimizer.zero_grad()
+                
+                output = model(inputs)
+                loss = criterion(output, labels)
+                loss.backward()
+                optimizer.step()
+
+                train_loss += loss.item()
+
+                if torch.isnan(loss):
+                    print('Loss is nan. Stopping training.')
+                    break
+
+            train_loss /= (len(video_trainloader))
+            train_losses.append(train_loss)
+
+            # Evaluation
+            model.eval()
+            val_loss = 0
+            with torch.no_grad():
+                for inputs, labels in video_valloader:
+                    inputs, labels = inputs.to(device), labels.float().to(device)
+                    
+                    output = model(inputs)
+                    loss = criterion(output, labels)
+                    val_loss += loss.item()
+            
+                val_loss /= (len(video_valloader))
+
+                # if eval loss is lower than the previous one, save the hyperparameters
+                if len(val_losses) == 0 or val_loss < min(val_losses):
+                    no_improvement = 0
+                else:
+                    no_improvement +=1
+
+                if no_improvement >= patience:
+                    print('---------------------')
+                    print('Early stopping in epoch {}'.format(epoch+1))
+                    print('Current val loss: {:.4f}'.format(val_loss))
+                    print('Optimal val loss: {:.4f}'.format(min(val_losses)))
+                    print('Last patience val losses: ', np.round(val_losses[-patience], 4))
+                    print('---------------------')
+                          
+                    break
+
+                val_losses.append(val_loss)
+
+        print('Train and val losses for depth {} and heads {}:'.format(depth, heads))
+        print('Train loss: {:.4f}'.format(np.round(train_losses[-patience], 4)))
+        print('Val loss: {:.4f}'.format(np.round(val_losses[-patience], 4)))
+        print('---------------------')  
+
+        if val_losses[-patience] < best_val_loss:
+            best_val_loss = val_losses[-patience]
+            best_val_losses = val_losses
+            best_train_losses = train_losses
+            best_depth = depth
+            best_heads = heads
+            best_epoch = epoch-patience
+
+DEPTH = best_depth
+HEADS = best_heads
+EPOCHS = int(best_epoch*1.5)
+
+print('Best depth and heads: {}, {}'.format(best_depth, best_heads))
+print('---------------------')
+print('Starting training with best hyperparameters...')
+print('---------------------')
+
+# plot losses
+plot = input("Do you want to plot the losses? (y/n)")
+if plot == "y":
+    plt.plot(best_train_losses, label='Training Loss')
+    plt.plot(best_val_losses, label='Validation Loss')
+    plt.legend()
+    # save figure in a document with the name of the model and the date
+    plt.savefig('./figures/LOSSES_VIVIT_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(IMAGE_SIZE,
+                                                                                PATCH_SIZE,
+                                                                                DEPTH,
+                                                                                HEADS,
+                                                                                date_string))
+    
+
+# merge train and validation sets
+video_trainset = torch.utils.data.ConcatDataset([video_trainset, video_valset])
+video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
+
+
+#_________________________TRAINING THE MODEL___________________________
+
 
 #__________________________MODEL_____________________________
 model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
@@ -140,23 +276,20 @@ model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest
             depth=DEPTH, 
             heads=HEADS).to(device)
 
-#_________________________TRAINING AND TESTING THE MODEL___________________________
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+parameters = sum([np.prod(p.size()) for p in parameters]) 
+print('---------------------')
+print('Trainable Parameters:', parameters)
+print('---------------------')
 
-criterion = nn.L1Loss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-train_losses = []
-eval_losses = []
+# Training
+model.train()
 
-n_batches = len(video_testloader)
-
-# train and evaluate the network
 for epoch in range(EPOCHS):
-
-    # Training
-    model.train()
     train_loss = 0
-    for i, (inputs, labels) in enumerate(video_trainloader):
+    for inputs, labels in video_trainloader:
         inputs, labels = inputs.to(device), labels.float().to(device)
 
         optimizer.zero_grad()
@@ -173,80 +306,44 @@ for epoch in range(EPOCHS):
             break
 
     train_loss /= (len(video_trainloader))
-    train_losses.append(train_loss)         
 
-    # Evaluation
-    model.eval()
-    eval_loss = 0
-    with torch.no_grad():
-        for inputs, labels in video_testloader:
-            inputs, labels = inputs.to(device), labels.float().to(device)
-            output = model(inputs)
-            eval_loss += criterion(output, labels).item()
+    print(f'EPOCH {epoch+1}/{EPOCHS}, TRAIN_NMAE={train_loss:.4f}')
 
-    eval_loss /= n_batches
-    eval_losses.append(eval_loss)
 
-    print(f'EPOCH {epoch+1}/{EPOCHS}, TRAIN_LOSS={train_loss:.4f}, EVAL_LOSS={eval_loss:.4f}')
+#_________________________SAVE MODEL___________________________
 
-date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
+# save trained model
+torch.save(model.state_dict(), './models/vivit.pt')
 
-print('Finished Training')
 
-# plot losses
-plot_opt = input("Do you want to plot the losses? (y/n)")
-if plot_opt == "y":
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(eval_losses, label='Evaluation Loss')
-    plt.legend()
-    # save figure in a document with the name of the model and the date
-    plt.savefig('./figures//LOSSES_{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(model.__class__.__name__,
-                                            IMAGE_SIZE,
-                                            PATCH_SIZE,
-                                            DEPTH,
-                                            HEADS,
-                                            date_string))
-#_________________________EVALUATION OF THE MODEL___________________________
+#_________________________EVALUATION___________________________
 
-eval = input("Do you want to evaluate the model? (y/n)")
-if eval == "n":
-    exit()
 
-total_loss = 0
-total_loss2 = 0
-
-criterion2 = nn.MSELoss()
-
-print('')
-print('Evaluating the model...')
+# Evaluation
 model.eval()
+nmae = 0
+nmse = 0
 with torch.no_grad():
-    for data, target in video_testloader:
+    for inputs, labels in video_testloader:
+        inputs, labels = inputs.to(device), labels.float().to(device)
+        output = model(inputs)
+        nmae += criterion(output, labels)
+        nmse += criterion2(output, labels)
 
-        data = data.to(device)
-        target = target.to(device)
-        
-        output = model(data)
-
-        loss = criterion(output, target.float())
-        total_loss += loss.item()
-
-        loss2 = criterion2(output, target.float())
-        total_loss2 += loss2.item()
+    nmae /= (len(video_testloader))
+    nmse /= (len(video_testloader))
 
 
-# normalized mean absolute error
-nmae = total_loss/n_batches
-print(f'NMAE: {nmae:.4f}')
+print('-------------------')
+print('NMAE: ', nmae)
+print('NMSE: ', nmse)
 
-# normalized mean squared error
-nmse = total_loss2/n_batches
-print(f'NMSE: {nmse:.4f}')
+
 
 ans = input('Do you want to save results and characteristics of the model? (y/n)')
 if ans=='y':
     # write evaluation results to file
-    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format(model.__class__.__name__,
+    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format('vivit',
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             DEPTH,
@@ -255,9 +352,10 @@ if ans=='y':
                 
         f.write('TRAINING DATASET: \n')
         f.write(f'Number of samples: {len(video_trainset)} \n')
-
+                
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
+        f.write(f'Trainable parameters:{parameters} \n')
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
@@ -267,11 +365,6 @@ if ans=='y':
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
 
-
-# option to save the model 
-ans = input('Do you want to save the model? (y/n)')
-if ans=='y':
-    torch.save(model, './models/vivit.pt')
 
 
 
