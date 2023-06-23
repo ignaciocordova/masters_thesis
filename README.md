@@ -6,7 +6,8 @@ Utilizar cross validation para el número de encoders y el número de heads.
 
 
 
-
+Ahora mismo lo que tengo es que estoy entrenando en TOOOODO el dataset 2016+2017 
+pero voy mirando 2018 para ver cuando parar. Eso es trampa parece ser. 
 
 
 

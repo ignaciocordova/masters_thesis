@@ -1,0 +1,199 @@
+TRAINING DATASET: 
+Number of samples: 17544 
+TRAINING PARAMETERS: 
+Batch size: 32 Learning rate: 0.0001 Epochs: 33 
+Trainable parameters:305105HYPERPARAMETERS: 
+Lat and Lon 43.875,42.875; -7.375,-8.375 
+Image size: 9 
+ Patch size: 3 
+ Channels: 8 
+ Dim: 64 
+ Depth: 4 
+ Heads: 4 
+
+EVALUATION RESULTS: 
+NMAE: 0.0690 
+NMSE: 0.0116 
+
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------
+Training with depth 1 and heads 1
+---------------------
+---------------------
+Early stopping in epoch 107
+Current val loss: 0.0643
+Optimal val loss: 0.0639
+Last patience val losses:  [0.0639 0.0647 0.066  0.066  0.065  0.0645 0.0655 0.0644 0.0663 0.0639
+ 0.0651 0.0646 0.0647 0.0656 0.0648]
+---------------------
+Train and val losses for depth 1 and heads 1:
+Train loss: 0.0510
+Val loss: 0.0639
+---------------------
+---------------------
+Training with depth 1 and heads 2
+---------------------
+---------------------
+Early stopping in epoch 74
+Current val loss: 0.0659
+Optimal val loss: 0.0631
+Last patience val losses:  [0.0631 0.0645 0.0641 0.0637 0.0641 0.0656 0.0663 0.0643 0.0634 0.0634
+ 0.0644 0.0652 0.0646 0.0643 0.0636]
+---------------------
+Train and val losses for depth 1 and heads 2:
+Train loss: 0.0501
+Val loss: 0.0631
+---------------------
+---------------------
+Training with depth 1 and heads 4
+---------------------
+---------------------
+Early stopping in epoch 60
+Current val loss: 0.0631
+Optimal val loss: 0.0618
+Last patience val losses:  [0.0618 0.0625 0.0634 0.0619 0.0624 0.0621 0.0629 0.0631 0.0628 0.0622
+ 0.0625 0.0633 0.0635 0.0636 0.0623]
+---------------------
+Train and val losses for depth 1 and heads 4:
+Train loss: 0.0487
+Val loss: 0.0618
+---------------------
+---------------------
+Training with depth 1 and heads 8
+---------------------
+---------------------
+Early stopping in epoch 41
+Current val loss: 0.0662
+Optimal val loss: 0.0636
+Last patience val losses:  [0.0636 0.0653 0.064  0.0641 0.0656 0.065  0.0647 0.0646 0.064  0.065
+ 0.065  0.0656 0.0649 0.0661 0.0651]
+---------------------
+Train and val losses for depth 1 and heads 8:
+Train loss: 0.0489
+Val loss: 0.0636
+---------------------
+---------------------
+Training with depth 2 and heads 1
+---------------------
+---------------------
+Early stopping in epoch 46
+Current val loss: 0.0633
+Optimal val loss: 0.0633
+Last patience val losses:  [0.0633 0.0656 0.0638 0.0669 0.0644 0.0639 0.0638 0.0644 0.0652 0.0643
+ 0.0633 0.0633 0.0672 0.0641 0.0644]
+---------------------
+Train and val losses for depth 2 and heads 1:
+Train loss: 0.0509
+Val loss: 0.0633
+---------------------
+---------------------
+Training with depth 2 and heads 2
+---------------------
+---------------------
+Early stopping in epoch 37
+Current val loss: 0.0639
+Optimal val loss: 0.0631
+Last patience val losses:  [0.0631 0.0682 0.0644 0.0685 0.0649 0.0643 0.0631 0.0648 0.0636 0.065
+ 0.0639 0.0638 0.0637 0.064  0.0642]
+---------------------
+Train and val losses for depth 2 and heads 2:
+Train loss: 0.0514
+Val loss: 0.0631
+---------------------
+---------------------
+Training with depth 2 and heads 4
+---------------------
+---------------------
+Early stopping in epoch 34
+Current val loss: 0.0641
+Optimal val loss: 0.0628
+Last patience val losses:  [0.0628 0.0645 0.066  0.0658 0.0633 0.0635 0.0636 0.0638 0.0643 0.0632
+ 0.0643 0.064  0.0649 0.0633 0.063 ]
+---------------------
+Train and val losses for depth 2 and heads 4:
+Train loss: 0.0491
+Val loss: 0.0628
+---------------------
+---------------------
+Training with depth 2 and heads 8
+---------------------
+---------------------
+Early stopping in epoch 38
+Current val loss: 0.0637
+Optimal val loss: 0.0629
+Last patience val losses:  [0.0629 0.0641 0.0647 0.0632 0.0642 0.065  0.0638 0.0639 0.0648 0.0638
+ 0.0632 0.0636 0.0648 0.0638 0.0632]
+---------------------
+Train and val losses for depth 2 and heads 8:
+Train loss: 0.0447
+Val loss: 0.0629
+---------------------
+---------------------
+Training with depth 4 and heads 1
+---------------------
+---------------------
+Early stopping in epoch 40
+Current val loss: 0.0646
+Optimal val loss: 0.0623
+Last patience val losses:  [0.0623 0.0637 0.0643 0.0647 0.0633 0.0648 0.0629 0.0646 0.063  0.0639
+ 0.0637 0.066  0.0658 0.0648 0.0645]
+---------------------
+Train and val losses for depth 4 and heads 1:
+Train loss: 0.0487
+Val loss: 0.0623
+---------------------
+---------------------
+Training with depth 4 and heads 2
+---------------------
+---------------------
+Early stopping in epoch 27
+Current val loss: 0.0638
+Optimal val loss: 0.0629
+Last patience val losses:  [0.0629 0.0649 0.0637 0.0639 0.0648 0.064  0.0635 0.0638 0.0635 0.0645
+ 0.0654 0.0663 0.0639 0.0645 0.0639]
+---------------------
+Train and val losses for depth 4 and heads 2:
+Train loss: 0.0510
+Val loss: 0.0629
+---------------------
+---------------------
+Training with depth 4 and heads 4
+---------------------
+---------------------
+Early stopping in epoch 38
+Current val loss: 0.0638
+Optimal val loss: 0.0612
+Last patience val losses:  [0.0612 0.0636 0.0641 0.0638 0.0655 0.0641 0.0634 0.0641 0.0635 0.0626
+ 0.0627 0.0621 0.0629 0.0628 0.064 ]
+---------------------
+Train and val losses for depth 4 and heads 4:
+Train loss: 0.0465
+Val loss: 0.0612
+---------------------
+---------------------
+Training with depth 4 and heads 8
+---------------------
+---------------------
+Early stopping in epoch 31
+Current val loss: 0.0650
+Optimal val loss: 0.0625
+Last patience val losses:  [0.0625 0.0655 0.0641 0.0645 0.0656 0.0639 0.064  0.0637 0.0625 0.0648
+ 0.0666 0.0647 0.064  0.0642 0.0658]
+---------------------
+Train and val losses for depth 4 and heads 8:
+Train loss: 0.0467
+Val loss: 0.0625
+---------------------
+Best depth and heads: 4, 4
+---------------------

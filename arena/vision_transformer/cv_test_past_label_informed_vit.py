@@ -11,9 +11,10 @@ from sklearn.preprocessing import StandardScaler
 import utils
 from my_models import regression_ViT as ViT
 
-from datetime import datetime
-import warnings
 import os
+import warnings
+from datetime import datetime
+
 
 #_________________________PARAMETERS___________________________
 
@@ -140,7 +141,7 @@ print('---------------------')
 criterion = nn.L1Loss()
 criterion2 = nn.MSELoss()
 
-param_grid = {'depth': [1, 2, 4],
+param_grid = {'depth': [1, 4, 8, 12],
               'heads': [1, 2, 4, 8]}
 
 best_val_loss = 1000
@@ -171,7 +172,7 @@ for depth in param_grid['depth']:
             # Training
             model.train()
             train_loss = 0
-            for i, (inputs, labels) in enumerate(trainloader):
+            for inputs, labels in trainloader:
                 inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
 
                 optimizer.zero_grad()
@@ -210,34 +211,58 @@ for depth in param_grid['depth']:
                     no_improvement +=1
 
                 if no_improvement >= patience:
+                    print('---------------------')
                     print('Early stopping in epoch {}'.format(epoch+1))
+                    print('Current val loss: {:.4f}'.format(val_loss))
+                    print('Optimal val loss: {:.4f}'.format(min(val_losses)))
+                    print('Last patience val losses: ', np.round(val_losses[-patience], 4))
+                    print('---------------------')
+                          
                     break
 
                 val_losses.append(val_loss)
 
         print('Train and val losses for depth {} and heads {}:'.format(depth, heads))
-        print('Train loss: {:.4f}'.format(train_loss))
-        print('Val loss: {:.4f}'.format(val_loss))
+        print('Train loss: {:.4f}'.format(np.round(train_losses[-patience], 4)))
+        print('Val loss: {:.4f}'.format(np.round(val_losses[-patience], 4)))
         print('---------------------')  
 
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        if val_losses[-patience] < best_val_loss:
+            best_val_loss = val_losses[-patience]
+            best_val_losses = val_losses
+            best_train_losses = train_losses
             best_depth = depth
             best_heads = heads
+            best_epoch = epoch-patience
+
+DEPTH = best_depth
+HEADS = best_heads
+EPOCHS = int(best_epoch*1.5)
+
+# plot losses
+plot = input("Do you want to plot the losses? (y/n)")
+if plot == "y":
+    plt.plot(best_train_losses, label='Training Loss')
+    plt.plot(best_val_losses, label='Validation Loss')
+    plt.legend()
+    # save figure in a document with the name of the model and the date
+    plt.savefig('./figures/LOSSES_vit_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(IMAGE_SIZE,
+                                                                                PATCH_SIZE,
+                                                                                DEPTH,
+                                                                                HEADS,
+                                                                                date_string))
+    
+
+# merge train and validation sets
+trainset = torch.utils.data.ConcatDataset([trainset, valset])
+trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=False)
 
 print('Best depth and heads: {}, {}'.format(best_depth, best_heads))
 print('---------------------')
 print('Starting training with best hyperparameters...')
 print('---------------------')
 
-DEPTH = best_depth
-HEADS = best_heads
-
-# merge train and validation sets
-trainset = torch.utils.data.ConcatDataset([trainset, valset])
-trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=False)
-
-#_________________________TRAINING AND TESTING THE MODEL___________________________
+#_________________________TRAINING THE MODEL___________________________
 
 
 #__________________________MODEL_____________________________
@@ -257,16 +282,12 @@ print('---------------------')
 
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-train_losses = []
-test_losses = []
-
-no_improvement = 0
+# Training
+model.train()
 
 for epoch in range(EPOCHS):
-    # Training
-    model.train()
     train_loss = 0
-    for i, (inputs, labels) in enumerate(trainloader):
+    for inputs, labels in trainloader:
         inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
 
         optimizer.zero_grad()
@@ -283,57 +304,38 @@ for epoch in range(EPOCHS):
             break
 
     train_loss /= (len(trainloader))
-    train_losses.append(train_loss)         
 
-    # Evaluation
-    model.eval()
-    test_loss = 0
-    test_loss2 = 0
-    with torch.no_grad():
-        for inputs, labels in testloader:
-            inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
-            
-            output = model(inputs)
-            loss = criterion(output, labels)
-            loss2 = criterion2(output, labels)
+    print(f'EPOCH {epoch+1}/{EPOCHS}, TRAIN_NMAE={train_loss:.4f}')
 
 
-            test_loss += loss.item()
-            test_loss2 += loss2.item()
-    
-        test_loss /= len(testloader)
-        test_loss2 /= len(testloader)
+#_________________________SAVE MODEL___________________________
 
-        # if eval loss is lower than the previous one, save the model
-        if len(test_losses) == 0 or test_loss < min(test_losses):
-            nmae = test_loss
-            nmse = test_loss2
-            print('Saving model at epoch {} with test_loss {}'.format(epoch+1, nmae))
-            torch.save(model, './models/past_label_informed_vivit.pt.pt')
-            no_improvement = 0
-        else:
-            no_improvement +=1
+# save trained model
+torch.save(model.state_dict(), './models/past_label_informed_vit.pt')
+
+
+#_________________________EVALUATION___________________________
+
+
+# Evaluation
+model.eval()
+nmae = 0
+nmse = 0
+with torch.no_grad():
+    for inputs, labels in testloader:
+        inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
         
-        if no_improvement >= patience:
-            print('Early stopping in epoch {}'.format(epoch+1))
-            break
-        test_losses.append(test_loss)
+        output = model(inputs)
+        nmae += criterion(output, labels)
+        nmse += criterion2(output, labels)
 
-    print(f'EPOCH {epoch+1}/{EPOCHS}, TRAIN_NMAE={train_loss:.4f}, TEST_NMAE={test_loss:.4f}')
+    nmae /= (len(testloader))
+    nmse /= (len(testloader))
 
 
-# plot losses
-plot = input("Do you want to plot the losses? (y/n)")
-if plot == "y":
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(test_losses, label='Evaluation Loss')
-    plt.legend()
-    # save figure in a document with the name of the model and the date
-    plt.savefig('./figures/LOSSES_past_label_informed_vit_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(IMAGE_SIZE,
-                                                                                PATCH_SIZE,
-                                                                                DEPTH,
-                                                                                HEADS,
-                                                                                date_string))
+print('-------------------')
+print('NMAE: ', nmae)
+print('NMSE: ', nmse)
 
 
 
@@ -361,6 +363,3 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
-
-
-
