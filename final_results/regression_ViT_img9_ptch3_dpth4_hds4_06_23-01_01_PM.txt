@@ -2,7 +2,8 @@ TRAINING DATASET:
 Number of samples: 17544 
 TRAINING PARAMETERS: 
 Batch size: 32 Learning rate: 0.0001 Epochs: 33 
-Trainable parameters:305105HYPERPARAMETERS: 
+Trainable parameters:305105
+HYPERPARAMETERS: 
 Lat and Lon 43.875,42.875; -7.375,-8.375 
 Image size: 9 
  Patch size: 3 

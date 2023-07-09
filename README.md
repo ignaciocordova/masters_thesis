@@ -10,7 +10,7 @@ Ahora mismo lo que tengo es que estoy entrenando en TOOOODO el dataset 2016+2017
 pero voy mirando 2018 para ver cuando parar. Eso es trampa parece ser. 
 
 
-
+Revisar el bucle del loop de evaluacion (test)
 
 
 
