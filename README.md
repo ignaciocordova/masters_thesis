@@ -13,6 +13,7 @@ pero voy mirando 2018 para ver cuando parar. Eso es trampa parece ser.
 Revisar el bucle del loop de evaluacion (test)
 
 
+PROBAR modelos más complejos que el ViT para 4,6 u 8 horas hacia el futuro. 
 
 
 
