@@ -4,6 +4,9 @@ Crear un programa de Python que entre el ViT con 2016 y lo valide con 2017.
 Aplicar early stopping si el validaliton loss no disminuye al cabo de 10 epochs.  
 Utilizar cross validation para el número de encoders y el número de heads. 
 
+PRIORIDADES!!! 
+Hacer la solicitud de TFM donde hay que escribir bastantes cosas ya (PARA PRINCIPIOS DE SEPTIEMBRE). Excepto toda la parte del jurado. 
+1,4,6
 
 
 Ahora mismo lo que tengo es que estoy entrenando en TOOOODO el dataset 2016+2017 

@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import StandardScaler
 
 import utils
-from my_models import regression_ViT as ViT
+from my_models import ViViT
 
 from datetime import datetime
 import warnings
@@ -19,29 +19,30 @@ import os
 
 INSTALLED_POWER = 17500
 
-# if you want to increase the geographical scope you will need to 
-# calculate the new image dimensions of the enlarged area
+# si quieres aumentar las coordenadas tendras que calcular las nuevas 
+# dimensiones de la imagen (de 8 canales)
 MAX_LAT = 43.875
 MIN_LAT = 42.875
 MAX_LON = -7.375
 MIN_LON = -8.375
 
-BATCH_SIZE = 32
+NUM_FRAMES = 4 # look 4 hours to the past
+OVERLAP_SIZE = 3 #number of overlaping frames
+
+BATCH_SIZE = 64
 EPOCHS = 100
 LEARNING_RATE = 0.0001
 
 IMAGE_SIZE = 9 
 PATCH_SIZE = 3
-CHANNELS = 8
+CHANNELS = 8+1 # 8 channels + 1 previous label channel
 DIM = 64
-DEPTH = 8       # number of transformer blocks
-HEADS = 8
-MLP_DIM = 64    
+DEPTH = 4       # number of transformer blocks
+HEADS = 4
 
-N_HOURS = 6 # number of hours into the future to predict
+N_HOURS = 6 # number of hours to predict into the future
 
 date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
-
 
 #_________________________DATA OF INTEREST_____________________________
 coordinates_of_interest = ['prediction date']
@@ -56,7 +57,7 @@ channels = ['10u', '10v', '2t', 'sp', '100u', '100v', 'vel10_', 'vel100']
 #______________DATA________________
 
 # ask the user if he wants to create the train and test sets or load them from disk
-answer = input(f'Create the ViT train, validation and test sets {N_HOURS} into the future? (y/n)')
+answer = input(f'Create the PAST LABEL INFORMED VIDEO train, validation and test sets {N_HOURS} into the future? (y/n)')
 
 if answer == 'y':
 
@@ -98,44 +99,54 @@ if answer == 'y':
     print('First {} rows of target after drop:'.format(N_HOURS+2))
     print(train_target.head(N_HOURS+2))
 
-
     # warning if meta_data and meta_target have different number of rows
     if train_data.shape[0] != train_target.shape[0]:
-        warnings.warn('train_data has {} rows and train_target has {} rows'.format(train_data.shape[0], train_target.shape[0]), RuntimeWarning)
+        warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(train_data.shape[0], train_target.shape[0]), RuntimeWarning)
+
+    train_images, train_labels = utils.get_data_and_target_with_previous_label_channel(train_data, train_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    trainset = torch.utils.data.TensorDataset(train_images, train_labels)
+
+    val_images, val_labels = utils.get_data_and_target_with_previous_label_channel(val_data, val_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    # first image in val set has label channel of last in train set
+    val_images[0, -1, :, :] = trainset[-1][1]
+    # add last NUM_FRAMES frames of the trainset to the beggining of the valset
+    val_images = torch.cat((train_images[-NUM_FRAMES+1:], val_images), dim=0)
+    val_labels = torch.cat((train_labels[-NUM_FRAMES+1:], val_labels), dim=0)
+    valset = torch.utils.data.TensorDataset(val_images, val_labels)
 
 
-    data, labels = utils.get_data_and_target(train_data, train_target, coordinates_of_interest, channels, normalize_target=True)
-    trainset = torch.utils.data.TensorDataset(data, labels)
-
-    data, labels = utils.get_data_and_target(val_data, val_target, coordinates_of_interest, channels, normalize_target=True)
-    valset = torch.utils.data.TensorDataset(data, labels)
-
-    test_data, test_labels = utils.get_data_and_target(test_data, test_target, coordinates_of_interest, channels, normalize_target=True)
+    test_images, test_labels = utils.get_data_and_target_with_previous_label_channel(test_data, test_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    # first image in test set has label channel of last in train set
+    test_images[0, -1, :, :] = valset[-1][1]
+    # add last NUM_FRAMES frames of the valset to the beggining of the testset
+    test_data = torch.cat((val_images[-NUM_FRAMES+1:], test_images), dim=0)
+    test_labels = torch.cat((val_labels[-NUM_FRAMES+1:], test_labels), dim=0)
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
+    trainloader = DataLoader(trainset, batch_size=1, shuffle=False)
+    valloader = DataLoader(valset, batch_size=1, shuffle=False)
+    testloader = DataLoader(testset, batch_size=1, shuffle=False)
+
+    video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
+    video_valset = utils.create_video_dataset(valloader, NUM_FRAMES, OVERLAP_SIZE)
+    video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
+
     # create the directory if it doesn't exist
-    if not os.path.exists('./images'):
-        os.makedirs('./images')
-    
-    # save in disk using N_HOURS as name
-    torch.save(trainset, './images/trainset_nhours{}h.pt'.format(N_HOURS))
-    torch.save(valset, './images/valset_nhours{}h.pt'.format(N_HOURS))
-    torch.save(testset, './images/testset_nhours{}h.pt'.format(N_HOURS))
+    if not os.path.exists('./past_informed_videos'):
+        os.makedirs('./past_informed_videos')
 
-else:
-    # read from disk
-    trainset = torch.load('./images/trainset_nhours{}h.pt'.format(N_HOURS))
-    valset = torch.load('./images/valset_nhours{}h.pt'.format(N_HOURS))
-    testset = torch.load('./images/testset_nhours{}h.pt'.format(N_HOURS))
-
-trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
-valloader = DataLoader(valset, batch_size=BATCH_SIZE, shuffle=False)
-testloader = DataLoader(testset, batch_size=BATCH_SIZE, shuffle=False)
-
-# print first label of trainset
-print('First label of trainset should be 0.438: ', np.round(trainset[0][1],3))
+    # save in disk
+    torch.save(video_trainset, './past_informed_videos/video_trainset.pt')
+    torch.save(video_valset, './past_informed_videos/video_valset.pt')
+    torch.save(video_testset, './past_informed_videos/video_testset.pt')
 
 
+video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
+video_valloader = DataLoader(video_valset, batch_size=BATCH_SIZE, shuffle=False)
+video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
+
+
+#_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('---------------------')
 print('Using device:', device)
@@ -146,8 +157,8 @@ print('---------------------')
 criterion = nn.L1Loss()
 criterion2 = nn.MSELoss()
 
-param_grid = {'depth': [4],
-              'heads': [1, 2]}
+param_grid = {'depth': [1, 2, 4, 8],
+              'heads': [1, 2, 4, 8]}
 
 best_val_loss = 1000
 
@@ -156,19 +167,19 @@ for depth in param_grid['depth']:
         print('---------------------')
         print('Training with depth {} and heads {}'.format(depth, heads))
         print('---------------------')
-        model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
-                    patch_size=PATCH_SIZE, 
-                    channels=CHANNELS,   # according to the channels chosen
-                    dim=DIM, 
-                    depth=depth, 
-                    heads=heads, 
-                    mlp_dim=MLP_DIM).to(device)
+        model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
+            patch_size=PATCH_SIZE, 
+            num_frames=NUM_FRAMES,
+            in_channels=CHANNELS,   # according to the channels chosen
+            dim=DIM, 
+            depth=depth, 
+            heads=heads).to(device)
     
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
         # early stopping
         no_improvement = 0
-        patience = 15 
+        patience = 10 
 
         train_losses = []
         val_losses = []
@@ -177,8 +188,8 @@ for depth in param_grid['depth']:
             # Training
             model.train()
             train_loss = 0
-            for i, (inputs, labels) in enumerate(trainloader):
-                inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
+            for inputs, labels in video_trainloader:
+                inputs, labels = inputs.to(device), labels.float().to(device)
 
                 optimizer.zero_grad()
                 
@@ -193,23 +204,23 @@ for depth in param_grid['depth']:
                     print('Loss is nan. Stopping training.')
                     break
 
-            train_loss /= (len(trainloader))
+            train_loss /= (len(video_trainloader))
             train_losses.append(train_loss)
 
             # Evaluation
             model.eval()
             val_loss = 0
             with torch.no_grad():
-                for inputs, labels in valloader:
-                    inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
+                for inputs, labels in video_valloader:
+                    inputs, labels = inputs.to(device), labels.float().to(device)
                     
                     output = model(inputs)
                     loss = criterion(output, labels)
                     val_loss += loss.item()
             
-                val_loss /= (len(valloader))
+                val_loss /= (len(video_valloader))
 
-                # if eval loss is lower than the previous one
+                # if eval loss is lower than the previous one, save the hyperparameters
                 if len(val_losses) == 0 or val_loss < min(val_losses):
                     no_improvement = 0
                 else:
@@ -220,7 +231,7 @@ for depth in param_grid['depth']:
                     print('Early stopping in epoch {}'.format(epoch+1))
                     print('Current val loss: {:.4f}'.format(val_loss))
                     print('Optimal val loss: {:.4f}'.format(min(val_losses)))
-                    print('Last patience val losses: ', np.round(val_losses[-patience:], 4))
+                    print('Last patience val losses: ', np.round(val_losses[-patience], 4))
                     print('---------------------')
                           
                     break
@@ -244,6 +255,11 @@ DEPTH = best_depth
 HEADS = best_heads
 EPOCHS = int(best_epoch*1.5)
 
+print('Best depth and heads: {}, {}'.format(best_depth, best_heads))
+print('---------------------')
+print('Starting training with best hyperparameters...')
+print('---------------------')
+
 # plot losses
 plot = input("Do you want to plot the losses? (y/n)")
 if plot == "y":
@@ -251,33 +267,30 @@ if plot == "y":
     plt.plot(best_val_losses, label='Validation Loss')
     plt.legend()
     # save figure in a document with the name of the model and the date
-    plt.savefig('./figures/LOSSES_NHOURS{}vit_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(N_HOURS,
-                                                                                    IMAGE_SIZE,
-                                                                                    PATCH_SIZE,
-                                                                                    DEPTH,
-                                                                                    HEADS,
-                                                                                    date_string))
+    plt.savefig('./figures/LOSSES_past_label_informed_ViViT_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(N_HOURS,
+                                                                                IMAGE_SIZE,
+                                                                                PATCH_SIZE,
+                                                                                DEPTH,
+                                                                                HEADS,
+                                                                                date_string))
+    
 
 # merge train and validation sets
-trainset = torch.utils.data.ConcatDataset([trainset, valset])
-trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
+video_trainset = torch.utils.data.ConcatDataset([video_trainset, video_valset])
+video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
 
-print('Best depth and heads: {}, {}'.format(best_depth, best_heads))
-print('---------------------')
-print('Starting training with best hyperparameters...')
-print('---------------------')
 
 #_________________________TRAINING THE MODEL___________________________
 
 
 #__________________________MODEL_____________________________
-model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
+model = ViViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
             patch_size=PATCH_SIZE, 
-            channels=CHANNELS,   # according to the channels chosen
+            num_frames=NUM_FRAMES,
+            in_channels=CHANNELS,   # according to the channels chosen
             dim=DIM, 
             depth=DEPTH, 
-            heads=HEADS, 
-            mlp_dim=MLP_DIM).to(device)
+            heads=HEADS).to(device)
 
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 parameters = sum([np.prod(p.size()) for p in parameters]) 
@@ -286,12 +299,14 @@ print('Trainable Parameters:', parameters)
 print('---------------------')
 
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+# Training
 model.train()
 
-for epoch in range(EPOCHS):    
+for epoch in range(EPOCHS):
     train_loss = 0
-    for i, (inputs, labels) in enumerate(trainloader):
-        inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
+    for inputs, labels in video_trainloader:
+        inputs, labels = inputs.to(device), labels.float().to(device)
 
         optimizer.zero_grad()
         
@@ -306,43 +321,45 @@ for epoch in range(EPOCHS):
             print('Loss is nan. Stopping training.')
             break
 
-    train_loss /= (len(trainloader))
+    train_loss /= (len(video_trainloader))
 
     print(f'EPOCH {epoch+1}/{EPOCHS}, TRAIN_NMAE={train_loss:.4f}')
 
 
 #_________________________SAVE MODEL___________________________
 
-# save trained model using N_HOURS as name
-torch.save(model.state_dict(), './models/{}_nhours_vit.pt'.format(N_HOURS))
+# save trained model
+torch.save(model.state_dict(), './models/{}_nhours_past_label_informed_vivit.pt'.format(N_HOURS))
 
 #_________________________EVALUATION___________________________
+
 
 # Evaluation
 model.eval()
 nmae = 0
 nmse = 0
 with torch.no_grad():
-    for inputs, labels in testloader:
-        inputs, labels = inputs.to(device), labels.unsqueeze(1).float().to(device)
-        
+    for inputs, labels in video_testloader:
+        inputs, labels = inputs.to(device), labels.float().to(device)
         output = model(inputs)
         nmae += criterion(output, labels)
         nmse += criterion2(output, labels)
 
-    nmae /= (len(testloader))
-    nmse /= (len(testloader))
+    nmae /= (len(video_testloader))
+    nmse /= (len(video_testloader))
+
 
 print('-------------------')
 print('NMAE: ', nmae)
 print('NMSE: ', nmse)
 
 
+
 ans = input('Do you want to save results and characteristics of the model? (y/n)')
 if ans=='y':
     # write evaluation results to file
-    with open('./results/{}_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format(model.__class__.__name__,
-                                            N_HOURS,    
+    with open('./results/{}_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format('past_label_informed_vivit',
+                                            N_HOURS,                                  
                                             IMAGE_SIZE,
                                             PATCH_SIZE,
                                             DEPTH,
@@ -350,11 +367,11 @@ if ans=='y':
                                             date_string), 'w') as f:
                 
         f.write('TRAINING DATASET: \n')
-        f.write(f'Number of samples: {len(trainset)} \n')
+        f.write(f'Number of samples: {len(video_trainset)} \n')
                 
         f.write('TRAINING PARAMETERS: \n')
         f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
-        f.write(f'Trainable parameters:{parameters}')
+        f.write(f'Trainable parameters:{parameters} \n')
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
@@ -363,6 +380,4 @@ if ans=='y':
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
         f.write(f'NMSE: {nmse:.4f} \n')
-
-
 
