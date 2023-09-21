@@ -18,7 +18,7 @@ mae = mean_absolute_error(target['target'], target['target_displaced'])
 
 print('MAE between target and displaced target: {}'.format(np.round(mae,4)))
 
-# compute MAE of predictions 4h into the future
+# compute MAE of predictions Nh into the future
 N_HOURS = 6
 target_into_future = target['target'].iloc[N_HOURS-1:].values
 # predictions

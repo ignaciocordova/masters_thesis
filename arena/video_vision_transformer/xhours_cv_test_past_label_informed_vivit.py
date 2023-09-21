@@ -87,13 +87,14 @@ if answer == 'y':
     print('First {} rows of target:'.format(N_HOURS+2))
     print(train_target.head(N_HOURS+2))
 
-    # drop the last N_HOURS rows of data and the first N_HOURS rows of target
-    train_data = train_data.iloc[:-N_HOURS+1, :]
-    train_target = train_target.iloc[N_HOURS-1:, :]
-    val_data = val_data.iloc[:-N_HOURS+1, :]
-    val_target = val_target.iloc[N_HOURS-1:, :]
-    test_data = test_data.iloc[:-N_HOURS+1, :]
-    test_target = test_target.iloc[N_HOURS-1:, :]
+    if N_HOURS>1:
+        # drop the last N_HOURS rows of data and the first N_HOURS rows of target
+        train_data = train_data.iloc[:-N_HOURS+1, :]
+        train_target = train_target.iloc[N_HOURS-1:, :]
+        val_data = val_data.iloc[:-N_HOURS+1, :]
+        val_target = val_target.iloc[N_HOURS-1:, :]
+        test_data = test_data.iloc[:-N_HOURS+1, :]
+        test_target = test_target.iloc[N_HOURS-1:, :]
 
     # print first N_HOURS+2 rows of data and target
     print('First {} rows of target after drop:'.format(N_HOURS+2))

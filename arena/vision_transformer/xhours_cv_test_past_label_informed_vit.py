@@ -39,10 +39,9 @@ DEPTH = 4       # number of transformer blocks
 HEADS = 1
 MLP_DIM = 64    
 
-N_HOURS = 6 # number of hours into the future to predicT
+N_HOURS = 1 # number of hours into the future to predicT
 
 date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
-
 
 #_________________________DATA OF INTEREST_____________________________
 coordinates_of_interest = ['prediction date']
@@ -52,7 +51,6 @@ for lat in np.arange(MAX_LAT, MIN_LAT-0.125, -0.125):
         coordinates_of_interest.append(f'({lat}, {lon})')
 
 channels = ['10u', '10v', '2t', 'sp', '100u', '100v', 'vel10_', 'vel100']
-
 
 #______________DATA________________
 
@@ -87,34 +85,45 @@ if answer == 'y':
     print('First {} rows of target:'.format(N_HOURS+2))
     print(train_target.head(N_HOURS+2))
 
-    # drop the last N_HOURS rows of data and the first N_HOURS rows of target
-    train_data = train_data.iloc[:-N_HOURS+1, :]
-    train_target = train_target.iloc[N_HOURS-1:, :]
-    val_data = val_data.iloc[:-N_HOURS+1, :]
-    val_target = val_target.iloc[N_HOURS-1:, :]
-    test_data = test_data.iloc[:-N_HOURS+1, :]
-    test_target = test_target.iloc[N_HOURS-1:, :]
-
-    # print first N_HOURS+2 rows of data and target
-    print('First {} rows of target after drop:'.format(N_HOURS+2))
-    print(train_target.head(N_HOURS+2))
-
-
     # warning if meta_data and meta_target have different number of rows
     if train_data.shape[0] != train_target.shape[0]:
         warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(train_data.shape[0], train_target.shape[0]), RuntimeWarning)
 
 
     data, labels = utils.get_data_and_target_with_previous_label_channel(train_data, train_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    if N_HOURS > 1:
+        # trim the first N_HOURS-1 rows of labels and the last N_HOURS+1 rows of data
+        labels = labels[N_HOURS-1:]
+        data = data[:-N_HOURS+1]
     trainset = torch.utils.data.TensorDataset(data, labels)
 
     data, labels = utils.get_data_and_target_with_previous_label_channel(val_data, val_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    if N_HOURS > 1:
+        # trim the first N_HOURS-1 rows of labels and the last N_HOURS+1 rows of data
+        labels = labels[N_HOURS-1:]
+        data = data[:-N_HOURS+1]
     data[0, -1, :, :] = trainset[-1][1]
     valset = torch.utils.data.TensorDataset(data, labels)
 
     test_data, test_labels = utils.get_data_and_target_with_previous_label_channel(test_data, test_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+    if N_HOURS > 1:
+        # trim the first N_HOURS-1 rows of labels and the last N_HOURS+1 rows of data
+        test_labels = test_labels[N_HOURS-1:]
+        test_data = test_data[:-N_HOURS+1]
     test_data[0, -1, :, :] = valset[-1][1]
     testset = torch.utils.data.TensorDataset(test_data, test_labels)
+
+    print('---------------------')
+    # lengths of train, val and test sets
+    print('Trainset length: ', len(trainset))
+    print('Valset length: ', len(valset))
+    print('Testset length: ', len(testset))
+    print('---------------------')
+
+    # print first N_HOURS+2 rows of data and target
+    print('First {} rows of target after drop:'.format(N_HOURS+2))
+    print(trainset[:N_HOURS+2][1])
+
 
     # create the directory if it doesn't exist
     if not os.path.exists('./past_informed_images'):
