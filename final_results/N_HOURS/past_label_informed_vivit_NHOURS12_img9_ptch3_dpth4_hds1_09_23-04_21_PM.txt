@@ -1,17 +1,17 @@
 TRAINING DATASET: 
-Number of samples: 17534 
+Number of samples: 17519 
 TRAINING PARAMETERS: 
-Batch size: 64 Learning rate: 0.0001 Epochs: 88 
-Trainable parameters:899107 
+Batch size: 64 Learning rate: 0.0001 Epochs: 57 
+Trainable parameters:375233 
 HYPERPARAMETERS: 
 Lat and Lon 43.875,42.875; -7.375,-8.375 
 Image size: 9 
  Patch size: 3 
  Channels: 9 
  Dim: 64 
- Depth: 12 
- Heads: 4 
+ Depth: 4 
+ Heads: 1 
 
 EVALUATION RESULTS: 
-NMAE: 0.0828 
-NMSE: 0.0146 
+NMAE: 0.1178 
+NMSE: 0.0262 

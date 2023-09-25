@@ -40,7 +40,7 @@ DIM = 64
 DEPTH = 4       # number of transformer blocks
 HEADS = 4
 
-N_HOURS = 6 # number of hours to predict into the future
+N_HOURS = 1 # number of hours to predict into the future
 
 date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
 
@@ -57,89 +57,110 @@ channels = ['10u', '10v', '2t', 'sp', '100u', '100v', 'vel10_', 'vel100']
 #______________DATA________________
 
 # ask the user if he wants to create the train and test sets or load them from disk
-answer = input(f'Create the PAST LABEL INFORMED VIDEO train, validation and test sets {N_HOURS} into the future? (y/n)')
+print('Create the PAST LABEL INFORMED VIDEO train, validation and test sets into the future',N_HOURS,'hours')
 
-if answer == 'y':
+#_________________DATA LOADED INTO MEMORY_____________________________
 
-    #_________________DATA LOADED INTO MEMORY_____________________________
-
-    # TAINING DATA AND TARGET
-    train_data = pd.read_csv('data_stv_2016.csv')
-    train_target = pd.read_csv('target_stv_2016.csv', header=None)
-    # feature scale the data ignoring the first column
-    scaler = StandardScaler()
-    train_data.iloc[:, 1:] = scaler.fit_transform(train_data.iloc[:, 1:])
+# TAINING DATA AND TARGET
+train_data = pd.read_csv('data_stv_2016.csv')
+train_target = pd.read_csv('target_stv_2016.csv', header=None)
+# feature scale the data ignoring the first column
+scaler = StandardScaler()
+train_data.iloc[:, 1:] = scaler.fit_transform(train_data.iloc[:, 1:])
 
 
-    # VALIDATION DATA AND TARGET
-    val_data = pd.read_csv('data_stv_2017.csv')
-    val_target = pd.read_csv('target_stv_2017.csv', header=None)
-    # feature scale the data ignoring the first column
-    val_data.iloc[:, 1:] = scaler.transform(val_data.iloc[:, 1:])
+# VALIDATION DATA AND TARGET
+val_data = pd.read_csv('data_stv_2017.csv')
+val_target = pd.read_csv('target_stv_2017.csv', header=None)
+# feature scale the data ignoring the first column
+val_data.iloc[:, 1:] = scaler.transform(val_data.iloc[:, 1:])
 
-    # TEST DATA AND TARGET
-    test_data = pd.read_csv('data_stv_2018.csv')
-    test_target = pd.read_csv('target_stv_2018.csv', header=None)
-    # feature scale the data ignoring the first column
-    test_data.iloc[:, 1:] = scaler.transform(test_data.iloc[:, 1:])
+# TEST DATA AND TARGET
+test_data = pd.read_csv('data_stv_2018.csv')
+test_target = pd.read_csv('target_stv_2018.csv', header=None)
+# feature scale the data ignoring the first column
+test_data.iloc[:, 1:] = scaler.transform(test_data.iloc[:, 1:])
 
-    # print first N_HOURS+2 rows of data and target
-    print('First {} rows of target:'.format(N_HOURS+2))
-    print(train_target.head(N_HOURS+2))
+# print first N_HOURS+5 rows of data and target
+print('First {} rows of target:'.format(N_HOURS+5))
+print(train_target.head(N_HOURS+5))
 
-    if N_HOURS>1:
-        # drop the last N_HOURS rows of data and the first N_HOURS rows of target
-        train_data = train_data.iloc[:-N_HOURS+1, :]
-        train_target = train_target.iloc[N_HOURS-1:, :]
-        val_data = val_data.iloc[:-N_HOURS+1, :]
-        val_target = val_target.iloc[N_HOURS-1:, :]
-        test_data = test_data.iloc[:-N_HOURS+1, :]
-        test_target = test_target.iloc[N_HOURS-1:, :]
-
-    # print first N_HOURS+2 rows of data and target
-    print('First {} rows of target after drop:'.format(N_HOURS+2))
-    print(train_target.head(N_HOURS+2))
-
-    # warning if meta_data and meta_target have different number of rows
-    if train_data.shape[0] != train_target.shape[0]:
-        warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(train_data.shape[0], train_target.shape[0]), RuntimeWarning)
-
-    train_images, train_labels = utils.get_data_and_target_with_previous_label_channel(train_data, train_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
-    trainset = torch.utils.data.TensorDataset(train_images, train_labels)
-
-    val_images, val_labels = utils.get_data_and_target_with_previous_label_channel(val_data, val_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
-    # first image in val set has label channel of last in train set
-    val_images[0, -1, :, :] = trainset[-1][1]
-    # add last NUM_FRAMES frames of the trainset to the beggining of the valset
-    val_images = torch.cat((train_images[-NUM_FRAMES+1:], val_images), dim=0)
-    val_labels = torch.cat((train_labels[-NUM_FRAMES+1:], val_labels), dim=0)
-    valset = torch.utils.data.TensorDataset(val_images, val_labels)
+# warning if meta_data and meta_target have different number of rows
+if train_data.shape[0] != train_target.shape[0]:
+    warnings.warn('meta_data has {} rows and meta_target has {} rows'.format(train_data.shape[0], train_target.shape[0]), RuntimeWarning)
 
 
-    test_images, test_labels = utils.get_data_and_target_with_previous_label_channel(test_data, test_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
-    # first image in test set has label channel of last in train set
-    test_images[0, -1, :, :] = valset[-1][1]
-    # add last NUM_FRAMES frames of the valset to the beggining of the testset
-    test_data = torch.cat((val_images[-NUM_FRAMES+1:], test_images), dim=0)
-    test_labels = torch.cat((val_labels[-NUM_FRAMES+1:], test_labels), dim=0)
-    testset = torch.utils.data.TensorDataset(test_data, test_labels)
+train_images, train_labels = utils.get_data_and_target_with_previous_label_channel(train_data, train_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+if N_HOURS > 1:
+    # trim the first N_HOURS-1 rows of labels and the last N_HOURS+1 rows of data
+    train_labels = train_labels[N_HOURS-1:]
+    train_images = train_images[:-N_HOURS+1]
+trainset = torch.utils.data.TensorDataset(train_images, train_labels)
 
-    trainloader = DataLoader(trainset, batch_size=1, shuffle=False)
-    valloader = DataLoader(valset, batch_size=1, shuffle=False)
-    testloader = DataLoader(testset, batch_size=1, shuffle=False)
+val_images, val_labels = utils.get_data_and_target_with_previous_label_channel(val_data, val_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+if N_HOURS > 1:
+    # trim the first N_HOURS-1 rows of labels and the last N_HOURS+1 rows of data
+    val_labels = val_labels[N_HOURS-1:]
+    val_images = val_images[:-N_HOURS+1]
+# first image in val set has label channel of last in train set
+val_images[0, -1, :, :] = trainset[-1][1]
+# add last NUM_FRAMES frames of the trainset to the beggining of the valset
+val_images = torch.cat((train_images[-NUM_FRAMES+1:], val_images), dim=0)
+val_labels = torch.cat((train_labels[-NUM_FRAMES+1:], val_labels), dim=0)
+valset = torch.utils.data.TensorDataset(val_images, val_labels)
 
-    video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
-    video_valset = utils.create_video_dataset(valloader, NUM_FRAMES, OVERLAP_SIZE)
-    video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
 
-    # create the directory if it doesn't exist
-    if not os.path.exists('./past_informed_videos'):
-        os.makedirs('./past_informed_videos')
+test_images, test_labels = utils.get_data_and_target_with_previous_label_channel(test_data, test_target, coordinates_of_interest, channels, IMAGE_SIZE, normalize_target=True)
+if N_HOURS > 1:
+    # trim the first N_HOURS-1 rows of labels and the last N_HOURS+1 rows of data
+    test_labels = test_labels[N_HOURS-1:]
+    test_images = test_images[:-N_HOURS+1]
+# first image in test set has label channel of last in train set
+test_images[0, -1, :, :] = valset[-1][1]
+# add last NUM_FRAMES frames of the valset to the beggining of the testset
+test_data = torch.cat((val_images[-NUM_FRAMES+1:], test_images), dim=0)
+test_labels = torch.cat((val_labels[-NUM_FRAMES+1:], test_labels), dim=0)
+testset = torch.utils.data.TensorDataset(test_data, test_labels)
 
-    # save in disk
-    torch.save(video_trainset, './past_informed_videos/video_trainset.pt')
-    torch.save(video_valset, './past_informed_videos/video_valset.pt')
-    torch.save(video_testset, './past_informed_videos/video_testset.pt')
+# print first N_HOURS+2 rows of data and target
+print('First {} rows of target after drop:'.format(N_HOURS+5))
+print(trainset.tensors[1][:N_HOURS+5])
+
+
+
+print('---------------------')
+# lengths of train, val and test sets
+print('Images Trainset length: ', len(trainset))
+print('Images Valset length: ', len(valset))
+print('Images Testset length: ', len(testset))
+print('---------------------')
+
+
+
+trainloader = DataLoader(trainset, batch_size=1, shuffle=False)
+valloader = DataLoader(valset, batch_size=1, shuffle=False)
+testloader = DataLoader(testset, batch_size=1, shuffle=False)
+
+video_trainset = utils.create_video_dataset(trainloader, NUM_FRAMES, OVERLAP_SIZE)
+video_valset = utils.create_video_dataset(valloader, NUM_FRAMES, OVERLAP_SIZE)
+video_testset = utils.create_video_dataset(testloader, NUM_FRAMES, OVERLAP_SIZE)
+
+
+print('---------------------')
+# lengths of train, val and test sets
+print('Video Trainset length: ', len(video_trainset))
+print('Video Valset length: ', len(video_valset))
+print('Video Testset length: ', len(video_testset))
+print('---------------------')
+
+# create the directory if it doesn't exist
+if not os.path.exists('./past_informed_videos'):
+    os.makedirs('./past_informed_videos')
+
+# save in disk
+torch.save(video_trainset, './past_informed_videos/video_trainset.pt')
+torch.save(video_valset, './past_informed_videos/video_valset.pt')
+torch.save(video_testset, './past_informed_videos/video_testset.pt')
 
 
 video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=False)
@@ -262,18 +283,17 @@ print('Starting training with best hyperparameters...')
 print('---------------------')
 
 # plot losses
-plot = input("Do you want to plot the losses? (y/n)")
-if plot == "y":
-    plt.plot(best_train_losses, label='Training Loss')
-    plt.plot(best_val_losses, label='Validation Loss')
-    plt.legend()
-    # save figure in a document with the name of the model and the date
-    plt.savefig('./figures/LOSSES_past_label_informed_ViViT_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(N_HOURS,
-                                                                                IMAGE_SIZE,
-                                                                                PATCH_SIZE,
-                                                                                DEPTH,
-                                                                                HEADS,
-                                                                                date_string))
+print('Ploting losses...')
+plt.plot(best_train_losses, label='Training Loss')
+plt.plot(best_val_losses, label='Validation Loss')
+plt.legend()
+# save figure in a document with the name of the model and the date
+plt.savefig('./figures/LOSSES_past_label_informed_ViViT_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(N_HOURS,
+                                                                            IMAGE_SIZE,
+                                                                            PATCH_SIZE,
+                                                                            DEPTH,
+                                                                            HEADS,
+                                                                            date_string))
     
 
 # merge train and validation sets
@@ -355,30 +375,28 @@ print('NMAE: ', nmae)
 print('NMSE: ', nmse)
 
 
+print('Saving results in txt...')
+# write evaluation results to file
+with open('./results/{}_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format('past_label_informed_vivit',
+                                        N_HOURS,                                  
+                                        IMAGE_SIZE,
+                                        PATCH_SIZE,
+                                        DEPTH,
+                                        HEADS,
+                                        date_string), 'w') as f:
+            
+    f.write('TRAINING DATASET: \n')
+    f.write(f'Number of samples: {len(video_trainset)} \n')
+            
+    f.write('TRAINING PARAMETERS: \n')
+    f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
+    f.write(f'Trainable parameters:{parameters} \n')
 
-ans = input('Do you want to save results and characteristics of the model? (y/n)')
-if ans=='y':
-    # write evaluation results to file
-    with open('./results/{}_NHOURS{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format('past_label_informed_vivit',
-                                            N_HOURS,                                  
-                                            IMAGE_SIZE,
-                                            PATCH_SIZE,
-                                            DEPTH,
-                                            HEADS,
-                                            date_string), 'w') as f:
-                
-        f.write('TRAINING DATASET: \n')
-        f.write(f'Number of samples: {len(video_trainset)} \n')
-                
-        f.write('TRAINING PARAMETERS: \n')
-        f.write(f'Batch size: {BATCH_SIZE} Learning rate: {LEARNING_RATE} Epochs: {EPOCHS} \n')
-        f.write(f'Trainable parameters:{parameters} \n')
-
-        f.write('HYPERPARAMETERS: \n')
-        f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
-        f.write(f'Image size: {IMAGE_SIZE} \n Patch size: {PATCH_SIZE} \n Channels: {CHANNELS} \n Dim: {DIM} \n Depth: {DEPTH} \n Heads: {HEADS} \n')
-        f.write('\n')
-        f.write('EVALUATION RESULTS: \n')
-        f.write(f'NMAE: {nmae:.4f} \n')
-        f.write(f'NMSE: {nmse:.4f} \n')
+    f.write('HYPERPARAMETERS: \n')
+    f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
+    f.write(f'Image size: {IMAGE_SIZE} \n Patch size: {PATCH_SIZE} \n Channels: {CHANNELS} \n Dim: {DIM} \n Depth: {DEPTH} \n Heads: {HEADS} \n')
+    f.write('\n')
+    f.write('EVALUATION RESULTS: \n')
+    f.write(f'NMAE: {nmae:.4f} \n')
+    f.write(f'NMSE: {nmse:.4f} \n')
 
