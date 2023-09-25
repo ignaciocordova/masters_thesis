@@ -31,12 +31,7 @@ EPOCHS = 150
 LEARNING_RATE = 0.0001
 
 IMAGE_SIZE = 9 
-PATCH_SIZE = 3
 CHANNELS = 8
-DIM = 64
-DEPTH = 8       # number of transformer blocks
-HEADS = 8
-MLP_DIM = 64    
 
 date_string = datetime.now().strftime("%m_%d-%I_%M_%p")
 
@@ -149,13 +144,11 @@ for num_conv_layers in param_grid['num_conv_layers']:
         print('---------------------')
         print('Training with depth {} and heads {}'.format(num_conv_layers, kernel_size))
         print('---------------------')
-        model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
-                    patch_size=PATCH_SIZE, 
-                    channels=CHANNELS,   # according to the channels chosen
-                    dim=DIM, 
-                    depth=depth, 
-                    heads=heads, 
-                    mlp_dim=MLP_DIM).to(device)
+        model = WindCNN(num_channels=CHANNELS,
+                        image_width=IMAGE_SIZE,
+                        image_height=IMAGE_SIZE,
+                        num_conv_layers=num_conv_layers,
+                        kernel_size=kernel_size)
     
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -220,7 +213,7 @@ for num_conv_layers in param_grid['num_conv_layers']:
 
                 val_losses.append(val_loss)
 
-        print('Train and val losses for depth {} and heads {}:'.format(depth, heads))
+        print('Train and val losses for num_conv_layers {} and kernel_size {}:'.format(num_conv_layers, kernel_size))
         print('Train loss: {:.4f}'.format(np.round(train_losses[-patience], 4)))
         print('Val loss: {:.4f}'.format(np.round(val_losses[-patience], 4)))
         print('---------------------')  
@@ -229,12 +222,10 @@ for num_conv_layers in param_grid['num_conv_layers']:
             best_val_loss = val_losses[-patience]
             best_val_losses = val_losses
             best_train_losses = train_losses
-            best_depth = depth
-            best_heads = heads
+            best_num_conv_layers = num_conv_layers
+            best_kernel_size = kernel_size
             best_epoch = epoch-patience
 
-DEPTH = best_depth
-HEADS = best_heads
 EPOCHS = int(best_epoch*1.5)
 
 # plot losses
@@ -244,10 +235,9 @@ if plot == "y":
     plt.plot(best_val_losses, label='Validation Loss')
     plt.legend()
     # save figure in a document with the name of the model and the date
-    plt.savefig('./figures/LOSSES_vit_img{}_ptch{}_dpth{}_hds{}_{}.png'.format(IMAGE_SIZE,
-                                                                                PATCH_SIZE,
-                                                                                DEPTH,
-                                                                                HEADS,
+    plt.savefig('./figures/LOSSES_vit_img{}_ptch{}_nconvs{}_kernel{}_{}.png'.format(IMAGE_SIZE,
+                                                                                best_num_conv_layers,
+                                                                                best_kernel_size,
                                                                                 date_string))
 
 
@@ -255,7 +245,7 @@ if plot == "y":
 trainset = torch.utils.data.ConcatDataset([trainset, valset])
 trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
 
-print('Best depth and heads: {}, {}'.format(best_depth, best_heads))
+print('Best depth and heads: {}, {}'.format(best_num_conv_layers, best_kernel_size))
 print('---------------------')
 print('Starting training with best hyperparameters...')
 print('---------------------')
@@ -264,13 +254,11 @@ print('---------------------')
 
 
 #__________________________MODEL_____________________________
-model = ViT(image_size=IMAGE_SIZE, # according to the coordinates of interest 
-            patch_size=PATCH_SIZE, 
-            channels=CHANNELS,   # according to the channels chosen
-            dim=DIM, 
-            depth=DEPTH, 
-            heads=HEADS, 
-            mlp_dim=MLP_DIM).to(device)
+model = WindCNN(num_channels=CHANNELS,
+                        image_width=IMAGE_SIZE,
+                        image_height=IMAGE_SIZE,
+                        num_conv_layers=best_num_conv_layers,
+                        kernel_size=best_kernel_size)
 
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 parameters = sum([np.prod(p.size()) for p in parameters]) 
@@ -307,7 +295,7 @@ for epoch in range(EPOCHS):
 #_________________________SAVE MODEL___________________________
 
 # save trained model
-torch.save(model.state_dict(), './models/vit.pt')
+torch.save(model.state_dict(), './models/CNN.pt')
 
 #_________________________EVALUATION___________________________
 
@@ -334,12 +322,11 @@ print('NMSE: ', nmse)
 ans = input('Do you want to save results and characteristics of the model? (y/n)')
 if ans=='y':
     # write evaluation results to file
-    with open('./results/{}_img{}_ptch{}_dpth{}_hds{}_{}.txt'.format(model.__class__.__name__,
-                                            IMAGE_SIZE,
-                                            PATCH_SIZE,
-                                            DEPTH,
-                                            HEADS,
-                                            date_string), 'w') as f:
+    with open('./results/{}_img{}_nconvs{}_kernel{}_{}.txt'.format(model.__class__.__name__,
+                                                                    IMAGE_SIZE,
+                                                                    best_num_conv_layers,
+                                                                    best_kernel_size,
+                                                                    date_string)):
                 
         f.write('TRAINING DATASET: \n')
         f.write(f'Number of samples: {len(trainset)} \n')
@@ -350,7 +337,7 @@ if ans=='y':
 
         f.write('HYPERPARAMETERS: \n')
         f.write(f'Lat and Lon {MAX_LAT},{MIN_LAT}; {MAX_LON},{MIN_LON} \n')
-        f.write(f'Image size: {IMAGE_SIZE} \n Patch size: {PATCH_SIZE} \n Channels: {CHANNELS} \n Dim: {DIM} \n Depth: {DEPTH} \n Heads: {HEADS} \n')
+        f.write(f'Image size: {IMAGE_SIZE} \n Channels: {CHANNELS} \n Num Convs: {best_num_conv_layers} \n Kernel: {best_kernel_size} \n')
         f.write('\n')
         f.write('EVALUATION RESULTS: \n')
         f.write(f'NMAE: {nmae:.4f} \n')
