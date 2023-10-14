@@ -135,7 +135,7 @@ criterion = nn.L1Loss()
 criterion2 = nn.MSELoss()
 
 param_grid = {'num_conv_layers': [4, 10, 20],
-              'kernel_size': [1, 3, 5]}
+              'kernel_size': [3]}
 
 best_val_loss = 10000
 
@@ -148,7 +148,7 @@ for num_conv_layers in param_grid['num_conv_layers']:
                         image_width=IMAGE_SIZE,
                         image_height=IMAGE_SIZE,
                         num_conv_layers=num_conv_layers,
-                        kernel_size=kernel_size)
+                        kernel_size=kernel_size).to(device)
     
         optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -235,7 +235,7 @@ if plot == "y":
     plt.plot(best_val_losses, label='Validation Loss')
     plt.legend()
     # save figure in a document with the name of the model and the date
-    plt.savefig('./figures/LOSSES_vit_img{}_ptch{}_nconvs{}_kernel{}_{}.png'.format(IMAGE_SIZE,
+    plt.savefig('./figures/LOSSES_CNN_img{}_nconvs{}_kernel{}_{}.png'.format(IMAGE_SIZE,
                                                                                 best_num_conv_layers,
                                                                                 best_kernel_size,
                                                                                 date_string))
@@ -258,7 +258,7 @@ model = WindCNN(num_channels=CHANNELS,
                         image_width=IMAGE_SIZE,
                         image_height=IMAGE_SIZE,
                         num_conv_layers=best_num_conv_layers,
-                        kernel_size=best_kernel_size)
+                        kernel_size=best_kernel_size).to(device)
 
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 parameters = sum([np.prod(p.size()) for p in parameters]) 
@@ -326,7 +326,7 @@ if ans=='y':
                                                                     IMAGE_SIZE,
                                                                     best_num_conv_layers,
                                                                     best_kernel_size,
-                                                                    date_string)):
+                                                                    date_string), 'w') as f:
                 
         f.write('TRAINING DATASET: \n')
         f.write(f'Number of samples: {len(trainset)} \n')

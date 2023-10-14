@@ -190,3 +190,42 @@ class ViViT(nn.Module):
         x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
 
         return self.mlp_head(x)
+    
+
+
+
+class WindCNN(nn.Module):
+    def __init__(self, num_channels, image_width, image_height, num_conv_layers, kernel_size):
+        super(WindCNN, self).__init__()
+
+        self.num_channels = num_channels
+        self.image_width = image_width
+        self.image_height = image_height
+        self.num_conv_layers = num_conv_layers
+        self.kernel_size = kernel_size
+
+        self.conv_layers = nn.ModuleList()
+
+        
+
+        # Create convolutional layers
+        for _ in range(self.num_conv_layers):
+            self.conv_layers.append(nn.Conv2d(in_channels=num_channels, out_channels=64, kernel_size=self.kernel_size, padding=1))
+            self.conv_layers.append(nn.ReLU())
+            num_channels = 64  # Update the number of channels after the first layer
+
+
+        # Fully connected layers
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(num_channels * image_width * image_height, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1)
+        )
+
+    def forward(self, x):
+        for layer in self.conv_layers:
+            x = layer(x)  # Apply convolutional layers
+
+        x = self.fc(x)  # Fully connected layers
+        return x

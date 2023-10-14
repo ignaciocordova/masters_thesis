@@ -165,10 +165,6 @@ class ViViT(nn.Module):
 
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(dim),
-            nn.Linear(dim, num_classes)
-        )
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(dim),
             nn.Linear(dim, 32),
             nn.ReLU(),
             nn.Linear(32, 1)
@@ -210,8 +206,7 @@ class WindCNN(nn.Module):
 
         self.conv_layers = nn.ModuleList()
 
-        # Calculate the input size for the fully connected layer
-        fc_input_size = num_channels * image_width * image_height
+        
 
         # Create convolutional layers
         for _ in range(self.num_conv_layers):
@@ -219,10 +214,11 @@ class WindCNN(nn.Module):
             self.conv_layers.append(nn.ReLU())
             num_channels = 64  # Update the number of channels after the first layer
 
+
         # Fully connected layers
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(fc_input_size, 128),
+            nn.Linear(num_channels * image_width * image_height, 128),
             nn.ReLU(),
             nn.Linear(128, 1)
         )

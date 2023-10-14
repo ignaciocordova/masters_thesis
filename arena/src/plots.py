@@ -45,7 +45,7 @@ point_shape = 'o'  # Circle markers
 x_label = "N hours ahead prediction"
 y_label = "NMAE"
 plot_title = "Comparison of NMAE Values"
-legend_labels = ["Persistence forecast", "ViT", "ViViT"]
+legend_labels = ["Persistence", "AR-ViT", "AR-ViViT"]
 
 # Create the plot
 plt.figure(figsize=(10, 6))  # Adjust the figure size as needed
