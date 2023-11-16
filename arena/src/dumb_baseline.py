@@ -19,7 +19,7 @@ mae = mean_absolute_error(target['target'], target['target_displaced'])
 print('MAE between target and displaced target: {}'.format(np.round(mae,4)))
 
 # compute MAE of predictions Nh into the future
-N_HOURS = 18
+N_HOURS = 1
 if N_HOURS > 1:
     target_into_future = target['target'].iloc[N_HOURS-1:].values
     # predictions
@@ -35,9 +35,9 @@ assert len(target_into_future) == len(predictions)
 # compute MAE
 mae = mean_absolute_error(target_into_future, predictions)
 
-print('MAE of predictions {}h into the future: {}'.format(N_HOURS, np.round(mae,4)))
+print('MAE of predictions {}h into the future: {}'.format(N_HOURS, np.round(mae,8)))
 
 # compute MSE error
 mse = np.mean((target_into_future - predictions)**2)
 
-print('MSE of predictions {}h into the future: {}'.format(N_HOURS, np.round(mse,4)))
+print('MSE of predictions {}h into the future: {}'.format(N_HOURS, np.round(mse,8)))

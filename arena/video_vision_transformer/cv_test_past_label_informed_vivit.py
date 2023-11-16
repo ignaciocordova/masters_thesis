@@ -127,7 +127,6 @@ video_trainloader = DataLoader(video_trainset, batch_size=BATCH_SIZE, shuffle=Fa
 video_valloader = DataLoader(video_valset, batch_size=BATCH_SIZE, shuffle=False)
 video_testloader = DataLoader(video_testset, batch_size=BATCH_SIZE, shuffle=False)
 
-
 #_________________________DEVICE_____________________________
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('---------------------')
@@ -359,6 +358,6 @@ if ans=='y':
         f.write(f'Image size: {IMAGE_SIZE} \n Patch size: {PATCH_SIZE} \n Channels: {CHANNELS} \n Dim: {DIM} \n Depth: {DEPTH} \n Heads: {HEADS} \n')
         f.write('\n')
         f.write('EVALUATION RESULTS: \n')
-        f.write(f'NMAE: {nmae:.4f} \n')
-        f.write(f'NMSE: {nmse:.4f} \n')
+        f.write(f'NMAE: {nmae:.8f} \n')
+        f.write(f'NMSE: {nmse:.8f} \n')
 
