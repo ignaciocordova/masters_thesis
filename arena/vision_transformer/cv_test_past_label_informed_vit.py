@@ -141,8 +141,8 @@ print('---------------------')
 criterion = nn.L1Loss()
 criterion2 = nn.MSELoss()
 
-param_grid = {'depth': [1, 4, 8, 12],
-              'heads': [1, 2, 4, 8]}
+param_grid = {'depth': [4],
+              'heads': [4]}
 
 best_val_loss = 1000
 

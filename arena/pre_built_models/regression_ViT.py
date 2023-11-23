@@ -129,9 +129,17 @@ class regression_ViT(nn.Module):
         x += self.pos_embedding[:, :(n + 1)]
         x = self.dropout(x)
 
-        x = self.transformer(x)
+        # x = self.transformer(x)
+
+        # Modified transformer to return attention weights
+        attention_weights = []
+        for attn, ff in self.transformer.layers:
+            x_attn = attn(x)
+            attention_weights.append(x_attn)
+            x = x_attn + x
+            x = ff(x) + x
 
         x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
 
         x = self.to_latent(x)
-        return self.mlp_head(x)
+        return self.mlp_head(x), attention_weights
