@@ -61,7 +61,7 @@ average_attention_scores_cls=average_attention_scores_cls.reshape(4,5)
 fig, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
 
 # Set common x-axis labels
-x_ticks_labels = ['rgs token', 'T-4', 'T-3', 'T-2', 'T-1']
+x_ticks_labels = ['rgs token', 'T-4 token', 'T-3 token', 'T-2 token', 'T-1 token']
 
 # Set y-axis limits
 y_axis_limits = (0, 1.0)
@@ -70,6 +70,7 @@ y_axis_limits = (0, 1.0)
 for i in range(4):
     axs[i].bar(np.arange(5), average_attention_scores_cls[i], color='peru', edgecolor='black')
     axs[i].set_ylim(y_axis_limits)
+    axs[i].set_ylabel(f'Encoder {i+1}', rotation=45, ha='right')
 
 # Set common x-axis properties
 axs[-1].set_xticks(np.arange(5))
